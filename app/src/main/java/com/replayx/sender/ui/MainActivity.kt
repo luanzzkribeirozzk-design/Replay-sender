@@ -118,7 +118,8 @@ class MainActivity : AppCompatActivity() {
     private fun startPolling() {
         pollHandler?.removeCallbacksAndMessages(null)
         pollHandler = android.os.Handler(mainLooper)
-        val check = object : Runnable {
+        lateinit var pollRunnable: Runnable
+        pollRunnable = object : Runnable {
             override fun run() {
                 lifecycleScope.launch {
                     val fields = withContext(Dispatchers.IO) { PairingManager.getStatus(this@MainActivity) }
@@ -131,12 +132,12 @@ class MainActivity : AppCompatActivity() {
                         boxCodigo.visibility = View.GONE
                         log("[OK] dispositivo conectado: $modelo")
                     } else {
-                        pollHandler?.postDelayed(this, 3000)
+                        pollHandler?.postDelayed(pollRunnable, 3000)
                     }
                 }
             }
         }
-        pollHandler?.postDelayed(check, 3000)
+        pollHandler?.postDelayed(pollRunnable, 3000)
     }
 
     private fun atualizarStatusPareamento() {
