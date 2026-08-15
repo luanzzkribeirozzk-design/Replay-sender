@@ -106,10 +106,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTab(i: Int) {
-        secPermissao.visibility = if (i == 0) View.VISIBLE else View.GONE
-        secPareamento.visibility = if (i == 1) View.VISIBLE else View.GONE
-        secFFM.visibility = if (i == 2) View.VISIBLE else View.GONE
-        secFFN.visibility = if (i == 3) View.VISIBLE else View.GONE
+        val secs = listOf(secPermissao, secPareamento, secFFM, secFFN)
+        secs.forEachIndexed { idx, v ->
+            if (idx == i) {
+                v.visibility = View.VISIBLE
+                v.alpha = 0f
+                v.animate().alpha(1f).setDuration(280).start()
+            } else {
+                v.visibility = View.GONE
+            }
+        }
 
         val tabs = listOf(tabPermissao, tabPareamento, tabFFM, tabFFN)
         tabs.forEachIndexed { idx, btn ->

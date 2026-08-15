@@ -4,6 +4,18 @@
     android:layout_height="match_parent"
     android:background="#000000">
 
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/bg_devwill"
+        android:scaleType="centerCrop"
+        android:alpha="0.35" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#88000000" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -141,7 +153,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Esse app precisa de acesso root ou Shizuku pra ler os replays salvos do Free Fire nesse PC/emulador."
-                            android:textColor="#AEAEB2"
+                            android:textColor="#E0E0E5"
                             android:textSize="13sp"
                             android:lineSpacingExtra="3dp"
                             android:layout_marginBottom="16dp" />
@@ -207,7 +219,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Gere um código e informe no app do celular pra parear os dois aparelhos."
-                            android:textColor="#AEAEB2"
+                            android:textColor="#E0E0E5"
                             android:textSize="13sp"
                             android:lineSpacingExtra="3dp"
                             android:layout_marginBottom="16dp" />
@@ -353,7 +365,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Envia o replay mais recente do Free Fire MAX instalado nesse PC/emulador pro aparelho pareado."
-                            android:textColor="#AEAEB2"
+                            android:textColor="#E0E0E5"
                             android:textSize="13sp"
                             android:lineSpacingExtra="3dp"
                             android:layout_marginBottom="16dp" />
@@ -393,7 +405,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Envia o replay mais recente do Free Fire Normal instalado nesse PC/emulador pro aparelho pareado."
-                            android:textColor="#AEAEB2"
+                            android:textColor="#E0E0E5"
                             android:textSize="13sp"
                             android:lineSpacingExtra="3dp"
                             android:layout_marginBottom="16dp" />
