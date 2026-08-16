@@ -44,7 +44,7 @@ public final class DiagDump {
             printLines(tree, log, "[EXT] ");
 
             log.onLog("[EXT] Arquivos de replay/histórico em qualquer subpasta:");
-            String hits = RootShell.run("find \"" + dir + "\" -iname \x27*replay*\x27 -o -iname \x27*histor*\x27 -o -iname \x27*record*\x27 2>/dev/null");
+            String hits = RootShell.run("find \"" + dir + "\" -iname '*replay*' -o -iname '*histor*' -o -iname '*record*' 2>/dev/null");
             printLines(hits, log, "[EXT-HIT] ");
             return;
         }
@@ -64,7 +64,7 @@ public final class DiagDump {
             printLines(RootShell.run("ls -la \"" + dir + "/shared_prefs\" 2>/dev/null"), log, "[INT-PREF] ");
 
             log.onLog("[INT] busca ampla por replay/histórico (2 níveis abaixo de files/):");
-            printLines(RootShell.run("find \"" + dir + "/files\" -maxdepth 2 -iname \x27*replay*\x27 -o -iname \x27*histor*\x27 -o -iname \x27*record*\x27 2>/dev/null"), log, "[INT-HIT] ");
+            printLines(RootShell.run("find \"" + dir + "/files\" -maxdepth 2 -iname '*replay*' -o -iname '*histor*' -o -iname '*record*' 2>/dev/null"), log, "[INT-HIT] ");
 
             log.onLog("[INT] listagem geral de files/ (2 níveis):");
             printLines(RootShell.run("find \"" + dir + "/files\" -maxdepth 2 2>/dev/null"), log, "[INT] ");
