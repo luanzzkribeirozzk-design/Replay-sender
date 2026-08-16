@@ -29,13 +29,11 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var secPermissao: View
     private lateinit var secPareamento: View
-    private lateinit var secFFM: View
-    private lateinit var secFFN: View
+    private lateinit var secEnviar: View
 
     private lateinit var tabPermissao: android.widget.Button
     private lateinit var tabPareamento: android.widget.Button
-    private lateinit var tabFFM: android.widget.Button
-    private lateinit var tabFFN: android.widget.Button
+    private lateinit var tabEnviar: android.widget.Button
 
     private lateinit var tvCodigo: android.widget.TextView
     private lateinit var boxCodigo: View
@@ -66,13 +64,11 @@ class MainActivity : AppCompatActivity() {
 
         secPermissao = findViewById(R.id.secPermissao)
         secPareamento = findViewById(R.id.secPareamento)
-        secFFM = findViewById(R.id.secFFM)
-        secFFN = findViewById(R.id.secFFN)
+        secEnviar = findViewById(R.id.secEnviar)
 
         tabPermissao = findViewById(R.id.tabPermissao)
         tabPareamento = findViewById(R.id.tabPareamento)
-        tabFFM = findViewById(R.id.tabFFM)
-        tabFFN = findViewById(R.id.tabFFN)
+        tabEnviar = findViewById(R.id.tabEnviar)
 
         tvCodigo = findViewById(R.id.tvCodigo)
         boxCodigo = findViewById(R.id.boxCodigo)
@@ -82,8 +78,7 @@ class MainActivity : AppCompatActivity() {
 
         tabPermissao.setOnClickListener { showTab(0) }
         tabPareamento.setOnClickListener { showTab(1) }
-        tabFFM.setOnClickListener { showTab(2) }
-        tabFFN.setOnClickListener { showTab(3) }
+        tabEnviar.setOnClickListener { showTab(2) }
 
         findViewById<View>(R.id.btnSolicitarRoot).setOnClickListener { checarAcesso(mostrarResultado = true) }
         findViewById<View>(R.id.btnSolicitarShizuku).setOnClickListener { abrirShizuku() }
@@ -107,7 +102,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTab(i: Int) {
-        val secs = listOf(secPermissao, secPareamento, secFFM, secFFN)
+        val secs = listOf(secPermissao, secPareamento, secEnviar)
         secs.forEachIndexed { idx, v ->
             if (idx == i) {
                 v.visibility = View.VISIBLE
@@ -118,7 +113,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val tabs = listOf(tabPermissao, tabPareamento, tabFFM, tabFFN)
+        val tabs = listOf(tabPermissao, tabPareamento, tabEnviar)
         tabs.forEachIndexed { idx, btn ->
             if (idx == i) {
                 btn.setBackgroundResource(R.drawable.ios_tab_selected)

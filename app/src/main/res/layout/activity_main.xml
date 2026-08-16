@@ -327,6 +327,15 @@
                             android:textStyle="bold"
                             android:layout_marginTop="10dp" />
 
+                        <TextView
+                            android:id="@+id/tvDispositivoBateria"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Bateria: —"
+                            android:textColor="#8E8E93"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp" />
+
                         <Button
                             android:id="@+id/btnDesparear"
                             android:layout_width="match_parent"
