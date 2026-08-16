@@ -28,17 +28,28 @@
             android:orientation="vertical"
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
-            android:paddingTop="50dp"
-            android:paddingBottom="14dp">
+            android:paddingTop="46dp"
+            android:paddingBottom="10dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="DEV WILL TECH"
+                android:textColor="#0A84FF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.15" />
+
+            <TextView
+                android:id="@+id/tvTitulo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="Enviador"
                 android:textColor="#FFFFFF"
-                android:textSize="28sp"
+                android:textSize="26sp"
                 android:textStyle="bold"
-                android:fontFamily="sans-serif-medium" />
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginTop="2dp" />
 
             <TextView
                 android:id="@+id/tvShellStatus"
@@ -51,7 +62,7 @@
 
         </LinearLayout>
 
-        <!-- ABAS (segmented control) -->
+        <!-- ABAS -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="44dp"
@@ -93,26 +104,11 @@
                 android:insetBottom="0dp" />
 
             <Button
-                android:id="@+id/tabFFM"
+                android:id="@+id/tabEnviar"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:text="FF MAX"
-                android:textAllCaps="false"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#8E8E93"
-                android:background="@android:color/transparent"
-                android:stateListAnimator="@null"
-                android:insetTop="0dp"
-                android:insetBottom="0dp" />
-
-            <Button
-                android:id="@+id/tabFFN"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="FF Normal"
+                android:text="Enviar"
                 android:textAllCaps="false"
                 android:textSize="12sp"
                 android:textStyle="bold"
@@ -152,7 +148,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Esse app precisa de acesso root ou Shizuku pra ler os replays salvos do Free Fire nesse PC/emulador."
+                            android:text="Esse app precisa de acesso root ou Shizuku pra ler os replays salvos do Free Fire nesse aparelho."
                             android:textColor="#E0E0E5"
                             android:textSize="13sp"
                             android:lineSpacingExtra="3dp"
@@ -267,13 +263,24 @@
                                 android:layout_marginTop="4dp" />
 
                             <TextView
+                                android:id="@+id/btnCopiarCodigo"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Copiar código"
+                                android:textColor="#0A84FF"
+                                android:textSize="12.5sp"
+                                android:textStyle="bold"
+                                android:padding="8dp"
+                                android:layout_marginTop="6dp" />
+
+                            <TextView
                                 android:id="@+id/tvCodigoExpira"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="expira em 10 min"
                                 android:textColor="#8E8E93"
                                 android:textSize="11sp"
-                                android:layout_marginTop="4dp" />
+                                android:layout_marginTop="2dp" />
 
                         </LinearLayout>
 
@@ -320,15 +327,6 @@
                             android:textStyle="bold"
                             android:layout_marginTop="10dp" />
 
-                        <TextView
-                            android:id="@+id/tvDispositivoBateria"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Bateria: —"
-                            android:textColor="#8E8E93"
-                            android:textSize="13sp"
-                            android:layout_marginTop="2dp" />
-
                         <Button
                             android:id="@+id/btnDesparear"
                             android:layout_width="match_parent"
@@ -346,9 +344,9 @@
 
                 </LinearLayout>
 
-                <!-- SECAO FFM -->
+                <!-- SECAO ENVIAR (FFM + FFN juntos) -->
                 <LinearLayout
-                    android:id="@+id/secFFM"
+                    android:id="@+id/secEnviar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
@@ -364,7 +362,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Envia o replay mais recente do Free Fire MAX instalado nesse PC/emulador pro aparelho pareado."
+                            android:text="Envia o replay mais recente do Free Fire instalado nesse aparelho pro aparelho pareado."
                             android:textColor="#E0E0E5"
                             android:textSize="13sp"
                             android:lineSpacingExtra="3dp"
@@ -382,34 +380,6 @@
                             android:background="@drawable/ios_btn_primary"
                             android:stateListAnimator="@null" />
 
-                    </LinearLayout>
-
-                </LinearLayout>
-
-                <!-- SECAO FFN -->
-                <LinearLayout
-                    android:id="@+id/secFFN"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:background="@drawable/ios_card"
-                        android:padding="18dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Envia o replay mais recente do Free Fire Normal instalado nesse PC/emulador pro aparelho pareado."
-                            android:textColor="#E0E0E5"
-                            android:textSize="13sp"
-                            android:lineSpacingExtra="3dp"
-                            android:layout_marginBottom="16dp" />
-
                         <Button
                             android:id="@+id/btnEnviarFFN"
                             android:layout_width="match_parent"
@@ -419,8 +389,9 @@
                             android:textColor="#FFFFFF"
                             android:textSize="14.5sp"
                             android:textStyle="bold"
-                            android:background="@drawable/ios_btn_primary"
-                            android:stateListAnimator="@null" />
+                            android:background="@drawable/ios_btn_secondary"
+                            android:stateListAnimator="@null"
+                            android:layout_marginTop="10dp" />
 
                     </LinearLayout>
 
@@ -433,7 +404,7 @@
         <!-- LOGS -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="150dp"
+            android:layout_height="140dp"
             android:orientation="vertical"
             android:background="@drawable/ios_card"
             android:layout_margin="16dp"

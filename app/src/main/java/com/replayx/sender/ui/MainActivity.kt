@@ -94,6 +94,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnEnviarFFM).setOnClickListener { enviarReplay(ReplayReader.FFM_PKG, "FF MAX") }
         findViewById<View>(R.id.btnEnviarFFN).setOnClickListener { enviarReplay(ReplayReader.FFN_PKG, "FF Normal") }
         findViewById<View>(R.id.btnLimparLogs).setOnClickListener { tvLog.text = "" }
+        findViewById<View>(R.id.tvTitulo).setOnLongClickListener { rodarDiagnostico(); true }
 
         showTab(0)
         checarAcesso(mostrarResultado = false)
@@ -272,6 +273,15 @@ class MainActivity : AppCompatActivity() {
             log("Concluído em %.1fs".format(elapsed))
             log("--------------------------------")
             overlayAguarde.visibility = View.GONE
+        }
+    }
+
+    private fun rodarDiagnostico() {
+        log("[SYS] >> Rodando diagnóstico (toque longo detectado)...")
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                DiagDump.run { msg -> lifecycleScope.launch(Dispatchers.Main) { log(msg) } }
+            }
         }
     }
 
