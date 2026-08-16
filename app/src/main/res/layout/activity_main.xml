@@ -435,6 +435,17 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/btnCopiarLogs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Copiar"
+                    android:textColor="#0A84FF"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:padding="4dp"
+                    android:layout_marginEnd="6dp" />
+
+                <TextView
                     android:id="@+id/btnLimparLogs"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

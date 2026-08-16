@@ -89,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnEnviarFFM).setOnClickListener { enviarReplay(ReplayReader.FFM_PKG, "FF MAX") }
         findViewById<View>(R.id.btnEnviarFFN).setOnClickListener { enviarReplay(ReplayReader.FFN_PKG, "FF Normal") }
         findViewById<View>(R.id.btnLimparLogs).setOnClickListener { tvLog.text = "" }
+        findViewById<View>(R.id.btnCopiarLogs).setOnClickListener { copiarLogs() }
         findViewById<View>(R.id.tvTitulo).setOnLongClickListener { rodarDiagnostico(); true }
 
         showTab(0)
@@ -269,6 +270,12 @@ class MainActivity : AppCompatActivity() {
             log("--------------------------------")
             overlayAguarde.visibility = View.GONE
         }
+    }
+
+    private fun copiarLogs() {
+        val cm = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("logs", tvLog.text.toString()))
+        android.widget.Toast.makeText(this, "Logs copiados", android.widget.Toast.LENGTH_SHORT).show()
     }
 
     private fun rodarDiagnostico() {
