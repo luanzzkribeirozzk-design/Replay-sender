@@ -1,5 +1,7 @@
 package com.replayx.sender.util;
 
+import java.util.Locale;
+
 /**
  * Acha e lê o replay mais recente (.bin + .json) de dentro da pasta privada
  * do Free Fire (Normal ou MAX). Testa cada caminho candidato separadamente
@@ -78,35 +80,63 @@ public final class ReplayReader {
             return null;
         }
 
-        String binPath = RootShell.run("ls -t \"" + foundDir + "\"/*.bin 2>/dev/null | head -n 1");
-        if (binPath == null) binPath = "";
-        binPath = binPath.trim();
-        if (binPath.isEmpty() || !binPath.endsWith(".bin")) {
+        String listedBins = RootShell.run("ls -t \"" + foundDir + "\"/*.bin 2>/dev/null");
+        if (listedBins == null || listedBins.trim().isEmpty()) {
             log.onLog("[ERR] Pasta achada (" + foundDir + ") mas sem nenhum arquivo .bin dentro");
             return null;
         }
 
-        String baseNoExt = binPath.substring(0, binPath.length() - 4);
-        String jsonPath = baseNoExt + ".json";
-        String jsonExists = RootShell.run("[ -f \"" + jsonPath + "\" ] && echo EXISTE || echo NAO_EXISTE");
-        if (jsonExists == null || !jsonExists.contains("EXISTE")) jsonPath = "";
+        String binPath = null;
+        String jsonPath = null;
+        for (String candidate : listedBins.split("\\n")) {
+            candidate = candidate.trim();
+            if (!candidate.endsWith(".bin")) continue;
+            String candidateJson = candidate.substring(0, candidate.length() - 4) + ".json";
+            String jsonExists = RootShell.run("[ -f \"" + candidateJson + "\" ] && echo EXISTE || echo NAO_EXISTE");
+            if (jsonExists != null && jsonExists.contains("EXISTE")) {
+                binPath = candidate;
+                jsonPath = candidateJson;
+                break;
+            }
+        }
+        if (binPath == null || jsonPath == null) {
+            log.onLog("[ERR] REPLAY_INCOMPLETO — não existe um par .bin + .json válido em " + foundDir);
+            return null;
+        }
 
-        log.onLog("[OK] replay localizado: " + fileName(binPath));
+        String binName = fileName(binPath);
+        String jsonName = fileName(jsonPath);
+        if (!sameStem(binName, jsonName)) {
+            log.onLog("[ERR] REPLAY_INCOMPATIVEL — .bin e .json não têm o mesmo nome-base");
+            return null;
+        }
+
+        log.onLog("[OK] replay localizado: " + binName + " + " + jsonName);
 
         Found f = new Found();
         f.binPath = binPath;
         f.jsonPath = jsonPath;
         f.binData = RootShell.runRaw("cat \"" + binPath + "\"");
-        if (!jsonPath.isEmpty()) {
-            f.jsonData = RootShell.runRaw("cat \"" + jsonPath + "\"");
-        }
+        f.jsonData = RootShell.runRaw("cat \"" + jsonPath + "\"");
 
         if (f.binData == null || f.binData.length == 0) {
-            log.onLog("[ERR] Achou o arquivo mas não conseguiu ler o conteúdo (permissão negada?)");
+            log.onLog("[ERR] O .bin foi encontrado, mas está vazio ou não pôde ser lido");
             return null;
         }
-        log.onLog("[OK] arquivo lido: " + f.binData.length + " bytes");
+        if (f.jsonData == null || f.jsonData.length == 0) {
+            log.onLog("[ERR] O .json foi encontrado, mas está vazio ou não pôde ser lido");
+            return null;
+        }
+        log.onLog("[OK] par validado: .bin=" + f.binData.length + " bytes, .json=" + f.jsonData.length + " bytes");
         return f;
+    }
+
+    private static boolean sameStem(String binName, String jsonName) {
+        String binStem = binName.toLowerCase(Locale.US).endsWith(".bin")
+                ? binName.substring(0, binName.length() - 4) : binName;
+        String jsonStem = jsonName.toLowerCase(Locale.US).endsWith(".json")
+                ? jsonName.substring(0, jsonName.length() - 5) : jsonName;
+        return !binStem.isEmpty() && binStem.equals(jsonStem);
     }
 
     public static String fileName(String path) {

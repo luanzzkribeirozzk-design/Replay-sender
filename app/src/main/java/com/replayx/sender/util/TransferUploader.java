@@ -25,6 +25,21 @@ public final class TransferUploader {
      */
     public static boolean upload(Context ctx, ReplayReader.Found found, String targetPkg, Progress p) {
         try {
+            if (found == null || found.binData == null || found.binData.length == 0) {
+                p.onLog("[ERR] REPLAY_SEM_BIN_VALIDO");
+                return false;
+            }
+            if (found.jsonData == null || found.jsonData.length == 0) {
+                p.onLog("[ERR] REPLAY_SEM_JSON_VALIDO — o Free Fire precisa do par .bin + .json");
+                return false;
+            }
+            String binName = ReplayReader.fileName(found.binPath);
+            String jsonName = ReplayReader.fileName(found.jsonPath);
+            if (!sameStem(binName, jsonName)) {
+                p.onLog("[ERR] REPLAY_INCOMPATIVEL — .bin e .json não têm o mesmo nome-base");
+                return false;
+            }
+
             String receiverId = getPairedReceiverId(ctx);
             if (receiverId == null || receiverId.isEmpty()) {
                 p.onLog("[ERR] NENHUM_DISPOSITIVO_PAREADO");
@@ -44,8 +59,8 @@ public final class TransferUploader {
             fields.put("senderId", Fs.str(senderId));
             fields.put("receiverId", Fs.str(receiverId));
             fields.put("sourcePkg", Fs.str(targetPkg));
-            fields.put("binName", Fs.str(ReplayReader.fileName(found.binPath)));
-            fields.put("jsonName", Fs.str(ReplayReader.fileName(found.jsonPath)));
+            fields.put("binName", Fs.str(binName));
+            fields.put("jsonName", Fs.str(jsonName));
             fields.put("totalChunksBin", Fs.num(binChunks));
             fields.put("totalChunksJson", Fs.num(jsonChunks));
             fields.put("status", Fs.str("pending"));
@@ -76,6 +91,15 @@ public final class TransferUploader {
             p.onLog("[..] enviando " + subcol + " " + (i + 1) + "/" + total);
         }
         return total;
+    }
+
+    private static boolean sameStem(String binName, String jsonName) {
+        if (binName == null || jsonName == null) return false;
+        String binStem = binName.toLowerCase(java.util.Locale.US).endsWith(".bin")
+                ? binName.substring(0, binName.length() - 4) : binName;
+        String jsonStem = jsonName.toLowerCase(java.util.Locale.US).endsWith(".json")
+                ? jsonName.substring(0, jsonName.length() - 5) : jsonName;
+        return !binStem.isEmpty() && binStem.equals(jsonStem);
     }
 
     private static String getPairedReceiverId(Context ctx) {
