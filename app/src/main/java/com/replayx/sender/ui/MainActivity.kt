@@ -85,6 +85,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnSolicitarArquivos).setOnClickListener { solicitarArquivos() }
 
         findViewById<View>(R.id.btnGerarCodigo).setOnClickListener { gerarCodigo() }
+        findViewById<View>(R.id.btnCopiarCodigo).setOnClickListener { copiarCodigo() }
         findViewById<View>(R.id.btnDesparear).setOnClickListener { desparear() }
         findViewById<View>(R.id.btnEnviarFFM).setOnClickListener { enviarReplay(ReplayReader.FFM_PKG, "FF MAX") }
         findViewById<View>(R.id.btnEnviarFFN).setOnClickListener { enviarReplay(ReplayReader.FFN_PKG, "FF Normal") }
@@ -270,6 +271,18 @@ class MainActivity : AppCompatActivity() {
             log("--------------------------------")
             overlayAguarde.visibility = View.GONE
         }
+    }
+
+    private fun copiarCodigo() {
+        val code = tvCodigo.text.toString().trim()
+        if (code.isEmpty() || code == "------") {
+            log("[ERR] Nenhum código de pareamento disponível para copiar")
+            return
+        }
+        val cm = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        cm.setPrimaryClip(android.content.ClipData.newPlainText("codigo_replayx", code))
+        log("[OK] código copiado para a área de transferência")
+        android.widget.Toast.makeText(this, "Código copiado", android.widget.Toast.LENGTH_SHORT).show()
     }
 
     private fun copiarLogs() {

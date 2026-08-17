@@ -35,7 +35,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="DEV WILL TECH"
-                android:textColor="#0A84FF"
+                android:textColor="#FFD60A"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.15" />
@@ -256,7 +256,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="------"
-                                android:textColor="#0A84FF"
+                                android:textColor="#FFD60A"
                                 android:textSize="36sp"
                                 android:textStyle="bold"
                                 android:letterSpacing="0.12"
@@ -267,7 +267,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Copiar código"
-                                android:textColor="#0A84FF"
+                                android:textColor="#FFD60A"
+                                android:background="@drawable/ios_btn_secondary"
                                 android:textSize="12.5sp"
                                 android:textStyle="bold"
                                 android:padding="8dp"
@@ -439,7 +440,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Copiar"
-                    android:textColor="#0A84FF"
+                    android:textColor="#FFD60A"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:padding="4dp"
@@ -450,7 +451,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Limpar"
-                    android:textColor="#0A84FF"
+                    android:textColor="#FFD60A"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:padding="4dp" />
@@ -502,7 +503,7 @@
             <ProgressBar
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:indeterminateTint="#0A84FF"
+                android:indeterminateTint="#FFD60A"
                 android:layout_marginBottom="16dp" />
 
             <TextView
