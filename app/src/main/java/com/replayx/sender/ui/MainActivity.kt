@@ -39,7 +39,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var boxCodigo: View
     private lateinit var boxConectado: View
     private lateinit var tvDispositivoModelo: android.widget.TextView
-    private lateinit var tvDispositivoBateria: android.widget.TextView
 
     private val SHIZUKU_CODE = 4001
     private val STORAGE_CODE = 4002
@@ -75,7 +74,6 @@ class MainActivity : AppCompatActivity() {
         boxCodigo = findViewById(R.id.boxCodigo)
         boxConectado = findViewById(R.id.boxConectado)
         tvDispositivoModelo = findViewById(R.id.tvDispositivoModelo)
-        tvDispositivoBateria = findViewById(R.id.tvDispositivoBateria)
 
         tabPermissao.setOnClickListener { showTab(0) }
         tabPareamento.setOnClickListener { showTab(1) }
@@ -224,9 +222,7 @@ class MainActivity : AppCompatActivity() {
                     val fields = withContext(Dispatchers.IO) { PairingManager.getStatus(this@MainActivity) }
                     if (fields != null && Fs.getStr(fields, "status", "none") == "connected") {
                         val modelo = Fs.getStr(fields, "receiverModel", "—")
-                        val bateria = Fs.getLong(fields, "receiverBattery", -1)
                         tvDispositivoModelo.text = modelo
-                        tvDispositivoBateria.text = if (bateria >= 0) "Bateria: $bateria%" else "Bateria: —"
                         boxConectado.visibility = View.VISIBLE
                         boxCodigo.visibility = View.GONE
                         log("[OK] dispositivo conectado: $modelo")
@@ -244,9 +240,7 @@ class MainActivity : AppCompatActivity() {
             val fields = withContext(Dispatchers.IO) { PairingManager.getStatus(this@MainActivity) }
             if (fields != null && Fs.getStr(fields, "status", "none") == "connected") {
                 val modelo = Fs.getStr(fields, "receiverModel", "—")
-                val bateria = Fs.getLong(fields, "receiverBattery", -1)
                 tvDispositivoModelo.text = modelo
-                tvDispositivoBateria.text = if (bateria >= 0) "Bateria: $bateria%" else "Bateria: —"
                 boxConectado.visibility = View.VISIBLE
             }
         }
