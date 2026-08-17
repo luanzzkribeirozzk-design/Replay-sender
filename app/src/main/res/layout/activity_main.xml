@@ -148,7 +148,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Esse app precisa de acesso root ou Shizuku pra ler os replays salvos do Free Fire nesse aparelho."
+                            android:text="Escolha como o app vai acessar os replays: ADB, Shizuku ou Root."
                             android:textColor="#E0E0E5"
                             android:textSize="13sp"
                             android:lineSpacingExtra="3dp"
@@ -158,7 +158,7 @@
                             android:id="@+id/btnSolicitarRoot"
                             android:layout_width="match_parent"
                             android:layout_height="52dp"
-                            android:text="Verificar acesso root"
+                            android:text="Escolher método: ADB / Shizuku / Root"
                             android:textAllCaps="false"
                             android:textColor="#FFFFFF"
                             android:textSize="14.5sp"
