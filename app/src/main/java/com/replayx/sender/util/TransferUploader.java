@@ -1,8 +1,11 @@
 package com.replayx.sender.util;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.util.Base64;
 import org.json.JSONObject;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
@@ -59,6 +62,8 @@ public final class TransferUploader {
             fields.put("senderId", Fs.str(senderId));
             fields.put("receiverId", Fs.str(receiverId));
             fields.put("sourcePkg", Fs.str(targetPkg));
+            fields.put("sourceVersion", Fs.str(installedVersion(ctx, targetPkg)));
+            fields.put("replayVersion", Fs.str(extractJsonVersion(found.jsonData)));
             fields.put("binName", Fs.str(binName));
             fields.put("jsonName", Fs.str(jsonName));
             fields.put("totalChunksBin", Fs.num(binChunks));
@@ -91,6 +96,28 @@ public final class TransferUploader {
             p.onLog("[..] enviando " + subcol + " " + (i + 1) + "/" + total);
         }
         return total;
+    }
+
+    private static String installedVersion(Context ctx, String pkg) {
+        try {
+            PackageInfo pi = ctx.getPackageManager().getPackageInfo(pkg, 0);
+            return pi.versionName == null ? "" : pi.versionName.trim();
+        } catch (PackageManager.NameNotFoundException e) {
+            return "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private static String extractJsonVersion(byte[] jsonData) {
+        try {
+            JSONObject metadata = new JSONObject(new String(jsonData, StandardCharsets.UTF_8).trim());
+            String version = metadata.optString("GameVersion", "");
+            if (version.isEmpty()) version = metadata.optString("Version", "");
+            return version.trim();
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private static boolean sameStem(String binName, String jsonName) {
