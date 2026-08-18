@@ -13,9 +13,19 @@ public final class Fs {
     private Fs() {}
 
     private static volatile boolean lastQueryNetworkError = false;
+    private static volatile int lastPatchHttpCode = 0;
+    private static volatile String lastPatchError = "";
 
     public static boolean lastQueryNetworkError() {
         return lastQueryNetworkError;
+    }
+
+    public static int lastPatchHttpCode() {
+        return lastPatchHttpCode;
+    }
+
+    public static String lastPatchError() {
+        return lastPatchError;
     }
 
     private static String base() {
@@ -86,13 +96,27 @@ public final class Fs {
     }
 
     public static boolean patchDoc(String path, JSONObject fields, String updateMaskQuery, String updateTime) {
+        boolean ok = patchDocOnce(path, fields, updateMaskQuery, updateTime);
+        // A stale/unsupported precondition should not block a field-masked update.
+        // Firestore Rules still protect already occupied slots from being replaced.
+        if (!ok && updateTime != null && !updateTime.isEmpty()
+                && (lastPatchHttpCode == 400 || lastPatchHttpCode == 409 || lastPatchHttpCode == 412)) {
+            ok = patchDocOnce(path, fields, updateMaskQuery, "");
+        }
+        return ok;
+    }
+
+    private static boolean patchDocOnce(String path, JSONObject fields, String updateMaskQuery, String updateTime) {
+        lastPatchHttpCode = 0;
+        lastPatchError = "";
+        HttpURLConnection c = null;
         try {
             String q = "?key=" + C.k() + (updateMaskQuery != null ? "&" + updateMaskQuery : "");
             if (updateTime != null && !updateTime.isEmpty()) {
                 q += "&currentDocument.updateTime=" + java.net.URLEncoder.encode(updateTime, "UTF-8");
             }
             URL url = new URL(base() + "/" + path + q);
-            HttpURLConnection c = (HttpURLConnection) url.openConnection();
+            c = (HttpURLConnection) url.openConnection();
             c.setRequestMethod("PATCH");
             c.setRequestProperty("Content-Type", "application/json");
             c.setDoOutput(true);
@@ -103,9 +127,16 @@ public final class Fs {
             os.write(body.toString().getBytes("UTF-8"));
             os.close();
             int code = c.getResponseCode();
-            c.disconnect();
+            String response = readAll(code >= 200 && code < 300 ? c.getInputStream() : c.getErrorStream());
+            lastPatchHttpCode = code;
+            lastPatchError = response == null ? "" : response;
             return code >= 200 && code < 300;
-        } catch (Exception e) { return false; }
+        } catch (Exception e) {
+            lastPatchError = e.getClass().getSimpleName();
+            return false;
+        } finally {
+            if (c != null) c.disconnect();
+        }
     }
 
     public static boolean deleteDoc(String path) {

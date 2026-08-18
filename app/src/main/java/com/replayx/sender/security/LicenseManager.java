@@ -102,7 +102,10 @@ public final class LicenseManager {
                 if (first == null) putPatch(migration, migrationMask, "firstUsed", com.replayx.sender.util.Fs.ts(firstSec));
                 putPatch(migration, migrationMask, "devicesUsed", com.replayx.sender.util.Fs.num(1));
                 if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, migration, migrationMask.toString(), doc.optString("updateTime", ""))) {
-                    out.message = "Não foi possível migrar o vínculo desta key";
+                    int code = com.replayx.sender.util.Fs.lastPatchHttpCode();
+                    out.message = code == 403
+                            ? "Firebase recusou a migração; publique as Rules de dois dispositivos"
+                            : "Não foi possível migrar o vínculo desta key (HTTP " + code + ")";
                     return out;
                 }
                 count = 1;
@@ -135,7 +138,12 @@ public final class LicenseManager {
                 }
                 putPatch(patch, mask, "devicesUsed", com.replayx.sender.util.Fs.num(count));
                 if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, patch, mask.toString(), doc.optString("updateTime", ""))) {
-                    out.message = "Não foi possível registrar este dispositivo";
+                    int code = com.replayx.sender.util.Fs.lastPatchHttpCode();
+                    out.message = code == 403
+                            ? "Firebase recusou o registro; publique as Rules de dois dispositivos"
+                            : code == 412 || code == 409
+                                ? "A key foi alterada; tente entrar novamente"
+                                : "Não foi possível registrar este dispositivo (HTTP " + code + ")";
                     return out;
                 }
             }
