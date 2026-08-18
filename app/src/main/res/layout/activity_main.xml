@@ -274,6 +274,19 @@
                                 android:padding="8dp"
                                 android:layout_marginTop="6dp" />
 
+                            <Button
+                                android:id="@+id/btnMostrarQr"
+                                android:layout_width="match_parent"
+                                android:layout_height="48dp"
+                                android:text="Mostrar QR Code"
+                                android:textAllCaps="false"
+                                android:textColor="#FFFFFF"
+                                android:textSize="13.5sp"
+                                android:textStyle="bold"
+                                android:background="@drawable/ios_btn_secondary"
+                                android:stateListAnimator="@null"
+                                android:layout_marginTop="10dp" />
+
                             <TextView
                                 android:id="@+id/tvCodigoExpira"
                                 android:layout_width="wrap_content"

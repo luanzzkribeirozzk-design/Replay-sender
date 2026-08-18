@@ -85,6 +85,7 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<View>(R.id.btnGerarCodigo).setOnClickListener { gerarCodigo() }
         findViewById<View>(R.id.btnCopiarCodigo).setOnClickListener { copiarCodigo() }
+        findViewById<View>(R.id.btnMostrarQr).setOnClickListener { mostrarQrCode() }
         findViewById<View>(R.id.btnDesparear).setOnClickListener { desparear() }
         findViewById<View>(R.id.btnEnviarFFM).setOnClickListener { enviarReplay(ReplayReader.FFM_PKG, "FF MAX") }
         findViewById<View>(R.id.btnEnviarFFN).setOnClickListener { enviarReplay(ReplayReader.FFN_PKG, "FF Normal") }
@@ -304,6 +305,46 @@ class MainActivity : AppCompatActivity() {
         log("[OK] código copiado para a área de transferência")
         android.widget.Toast.makeText(this, "Código copiado", android.widget.Toast.LENGTH_SHORT).show()
     }
+
+    private fun mostrarQrCode() {
+        val code = tvCodigo.text.toString().trim()
+        if (code.isEmpty() || code == "------") {
+            log("[ERR] Gere um código antes de mostrar o QR")
+            android.widget.Toast.makeText(this, "Gere um código de pareamento primeiro", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val content = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                gravity = android.view.Gravity.CENTER
+                setPadding(dp(16), dp(8), dp(16), 0)
+            }
+            val image = android.widget.ImageView(this).apply {
+                setImageBitmap(QrCodeUtil.create(code))
+                setBackgroundColor(0xFFFFFFFF.toInt())
+                setPadding(dp(10), dp(10), dp(10), dp(10))
+                contentDescription = "QR Code de pareamento $code"
+            }
+            content.addView(image, android.widget.LinearLayout.LayoutParams(dp(280), dp(280)))
+            val hint = android.widget.TextView(this).apply {
+                text = "Escaneie com o Receiver\nCódigo: $code"
+                setTextColor(0xFF222222.toInt())
+                textSize = 14f
+                gravity = android.view.Gravity.CENTER
+                setPadding(0, dp(10), 0, 0)
+            }
+            content.addView(hint, android.widget.LinearLayout.LayoutParams(-1, -2))
+            AlertDialog.Builder(this)
+                .setTitle("Pareamento por QR Code")
+                .setView(content)
+                .setPositiveButton("Fechar", null)
+                .show()
+        } catch (e: Exception) {
+            log("[ERR] Não foi possível gerar o QR")
+        }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun copiarLogs() {
         val cm = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
