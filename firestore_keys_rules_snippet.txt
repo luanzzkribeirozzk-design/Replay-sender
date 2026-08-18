@@ -1,26 +1,46 @@
-// ReplayX — substituir somente o bloco match /keys/{keyId} existente.
-// Mantenha os blocos atuais de pair_codes, pairings e transfers.
-// O APK usa Firestore REST sem Firebase Auth; por isso este bloco limita a
-// progressão dos slots, mas não substitui autenticação/App Check/backend.
+// ReplayX — substitua somente o bloco match /keys/{keyId} existente.
+// Os blocos de admins, pair_codes, pairings e transfers permanecem como estão.
+// Esta versão mantém create/delete compatíveis com seu painel atual e adiciona
+// a trava de no máximo dois slots sem permitir limpar ou trocar um slot usado.
 
 match /keys/{keyId} {
-  // Necessário para o login consultar a key pelo campo keyString.
   allow get, list: if true;
 
-  // O aplicativo só pode avançar o uso da key. Nunca pode apagar, reduzir
-  // devicesUsed ou limpar um slot já preenchido.
-  allow update: if
-    request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-      'slot1DeviceId', 'slot1Type', 'slot1Model', 'slot1UsedAt',
-      'slot2DeviceId', 'slot2Type', 'slot2Model', 'slot2UsedAt',
-      'devicesUsed', 'firstUsed'
-    ])
-    && request.resource.data.get('devicesUsed', 0) >= resource.data.get('devicesUsed', 0)
-    && request.resource.data.get('devicesUsed', 0) <= 2
-    && (resource.data.get('slot1DeviceId', '') == ''
-        || request.resource.data.get('slot1DeviceId', '') == resource.data.get('slot1DeviceId', ''))
-    && (resource.data.get('slot2DeviceId', '') == ''
-        || request.resource.data.get('slot2DeviceId', '') == resource.data.get('slot2DeviceId', ''));
+  allow create: if request.resource.data.keys().hasAll(['keyString','generatedBy','status','days'])
+                && request.resource.data.status == 'active';
 
-  allow create, delete: if false;
+  allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly([
+                      'status', 'pausedAt', 'firstUsed', 'deviceId', 'deviceModel', 'lastIP', 'days',
+                      'slot1DeviceId', 'slot1Type', 'slot1Model', 'slot1UsedAt',
+                      'slot2DeviceId', 'slot2Type', 'slot2Model', 'slot2UsedAt',
+                      'devicesUsed'
+                    ])
+                // Campos antigos ficam imutáveis depois da migração.
+                && request.resource.data.get('deviceId', '') == resource.data.get('deviceId', '')
+                && request.resource.data.get('deviceModel', '') == resource.data.get('deviceModel', '')
+                // firstUsed só pode ser preenchido uma vez.
+                && (resource.data.get('firstUsed', null) == null
+                    || request.resource.data.get('firstUsed', null) == resource.data.get('firstUsed', null))
+                // O contador só avança e nunca passa de dois.
+                && request.resource.data.get('devicesUsed', 0) >= resource.data.get('devicesUsed', 0)
+                && request.resource.data.get('devicesUsed', 0) <= 2
+                // Um slot preenchido não pode ser trocado nem apagado.
+                && (resource.data.get('slot1DeviceId', '') == ''
+                    || request.resource.data.get('slot1DeviceId', '') == resource.data.get('slot1DeviceId', ''))
+                && (resource.data.get('slot2DeviceId', '') == ''
+                    || request.resource.data.get('slot2DeviceId', '') == resource.data.get('slot2DeviceId', ''))
+                // O contador precisa corresponder à quantidade de slots ocupados.
+                && ((request.resource.data.get('devicesUsed', 0) == 0
+                     && request.resource.data.get('slot1DeviceId', '') == ''
+                     && request.resource.data.get('slot2DeviceId', '') == '')
+                    || (request.resource.data.get('devicesUsed', 0) == 1
+                        && request.resource.data.get('slot1DeviceId', '') != ''
+                        && request.resource.data.get('slot2DeviceId', '') == '')
+                    || (request.resource.data.get('devicesUsed', 0) == 2
+                        && request.resource.data.get('slot1DeviceId', '') != ''
+                        && request.resource.data.get('slot2DeviceId', '') != ''));
+
+  // Mantido igual às Rules atuais para não quebrar seu painel.
+  allow delete: if true;
 }

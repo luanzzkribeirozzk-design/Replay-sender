@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /admins/{adminId} {
+      allow get, list: if true;
+      allow create: if request.resource.data.keys().hasAll(['user','pass','credits','status'])
+                    && request.resource.data.status == 'active';
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['credits','creditsUsed','keysGenerated','keyPrefix','status']);
+      allow delete: if true;
+    }
+
+    match /keys/{keyId} {
+      allow get, list: if true;
+      allow create: if request.resource.data.keys().hasAll(['keyString','generatedBy','status','days'])
+                    && request.resource.data.status == 'active';
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly([
+                        'status', 'pausedAt', 'firstUsed', 'deviceId', 'deviceModel', 'lastIP', 'days',
+                        'slot1DeviceId', 'slot1Type', 'slot1Model', 'slot1UsedAt',
+                        'slot2DeviceId', 'slot2Type', 'slot2Model', 'slot2UsedAt',
+                        'devicesUsed'
+                      ])
+                    && request.resource.data.get('deviceId', '') == resource.data.get('deviceId', '')
+                    && request.resource.data.get('deviceModel', '') == resource.data.get('deviceModel', '')
+                    && (!resource.data.keys().hasAll(['firstUsed'])
+                        || (request.resource.data.keys().hasAll(['firstUsed'])
+                            && request.resource.data.firstUsed == resource.data.firstUsed))
+                    && request.resource.data.get('devicesUsed', 0) >= resource.data.get('devicesUsed', 0)
+                    && request.resource.data.get('devicesUsed', 0) <= 2
+                    && (resource.data.get('slot1DeviceId', '') == ''
+                        || request.resource.data.get('slot1DeviceId', '') == resource.data.get('slot1DeviceId', ''))
+                    && (resource.data.get('slot2DeviceId', '') == ''
+                        || request.resource.data.get('slot2DeviceId', '') == resource.data.get('slot2DeviceId', ''))
+                    && ((request.resource.data.get('devicesUsed', 0) == 0
+                         && request.resource.data.get('slot1DeviceId', '') == ''
+                         && request.resource.data.get('slot2DeviceId', '') == '')
+                        || (request.resource.data.get('devicesUsed', 0) == 1
+                            && request.resource.data.get('slot1DeviceId', '') != ''
+                            && request.resource.data.get('slot2DeviceId', '') == '')
+                        || (request.resource.data.get('devicesUsed', 0) == 2
+                            && request.resource.data.get('slot1DeviceId', '') != ''
+                            && request.resource.data.get('slot2DeviceId', '') != ''));
+      allow delete: if true;
+    }
+
+    match /blocked_ips/{ip} {
+      allow read, write: if true;
+    }
+
+    match /login_attempts/{id} {
+      allow create: if true;
+      allow get, list: if true;
+      allow update, delete: if false;
+    }
+
+    match /historico/{id} {
+      allow read, write: if true;
+    }
+
+    match /pair_codes/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if true;
+      allow delete: if false;
+    }
+
+    match /pairings/{senderId} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if true;
+      allow delete: if false;
+    }
+
+    match /transfers/{transferId} {
+      allow get, list: if true;
+      allow create, update: if true;
+      allow delete: if false;
+
+      match /chunks_bin/{chunkId} {
+        allow get, create: if true;
+      }
+      match /chunks_json/{chunkId} {
+        allow get, create: if true;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+  }
+}

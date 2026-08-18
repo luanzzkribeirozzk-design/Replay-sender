@@ -8,7 +8,7 @@ O Sender e o Receiver usam o mesmo formato. A key começa a validade na primeira
 
 Não apague a coleção `keys`. O aplicativo novo migra automaticamente o campo antigo `deviceId` para `slot1DeviceId` na primeira validação, preservando o primeiro aparelho já autorizado.
 
-Mantenha os blocos existentes de `pair_codes`, `pairings` e `transfers`. Na aba **Firestore Database → Regras**, substitua somente o bloco `match /keys/{keyId}` pelo conteúdo de `firestore_keys_rules_snippet.txt` e publique. Não substitua o arquivo inteiro se ele contiver regras necessárias para as outras coleções.
+Mantenha os blocos existentes de `pair_codes`, `pairings` e `transfers`. Na aba **Firestore Database → Regras**, a opção mais simples é copiar o arquivo completo `firestore.rules.updated` e publicar. Ele já mantém as regras que você enviou e altera somente o bloco `keys`. Se preferir, use `firestore_keys_rules_snippet.txt` para substituir somente o bloco `match /keys/{keyId}`. Não apague as regras das outras coleções.
 
 O bloco impede apagar, reduzir ou limpar os slots já ocupados e limita `devicesUsed` a 2. Como o aplicativo atual usa Firestore REST com API key pública e sem Firebase Auth, esse bloqueio limita a quantidade de vínculos, mas não é uma proteção absoluta contra um APK modificado. Para segurança máxima seria necessário mover a reserva dos slots para uma Cloud Function autenticada.
 
