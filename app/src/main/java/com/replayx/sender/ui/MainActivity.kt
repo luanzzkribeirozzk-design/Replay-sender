@@ -1,9 +1,11 @@
 package com.replayx.sender.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -45,6 +47,8 @@ class MainActivity : AppCompatActivity() {
 
     private var pollHandler: android.os.Handler? = null
     private var modoAcesso = "AUTO"
+    private var licenseTimer: CountDownTimer? = null
+    private var licenseValidationRunning = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +57,15 @@ class MainActivity : AppCompatActivity() {
             finish()
             return
         }
+        if (!com.replayx.sender.security.LicenseManager.hasLocalLicense(this)) {
+            val intent = Intent(this, LoginActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            startActivity(intent)
+            finish()
+            return
+        }
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
 
         setContentView(R.layout.activity_main)
 
@@ -96,11 +109,77 @@ class MainActivity : AppCompatActivity() {
         showTab(0)
         checarAcesso(mostrarResultado = false)
         atualizarStatusPareamento()
+        startLicenseTimer()
     }
 
     override fun onResume() {
         super.onResume()
         checarAcesso(mostrarResultado = false)
+        revalidateLicense()
+    }
+
+    private fun revalidateLicense() {
+        if (licenseValidationRunning) return
+        val key = com.replayx.sender.security.LicenseManager.savedKey(this)
+        if (key.isEmpty()) return
+        licenseValidationRunning = true
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                com.replayx.sender.security.LicenseManager.validate(this@MainActivity, key)
+            }
+            licenseValidationRunning = false
+            if (!result.ok && !result.networkError) {
+                com.replayx.sender.security.LicenseManager.clear(this@MainActivity)
+                val intent = Intent(this@MainActivity, ExpiredActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                finish()
+            } else if (result.ok) {
+                startLicenseTimer()
+            }
+        }
+    }
+
+    private fun startLicenseTimer() {
+        val timerView = findViewById<android.widget.TextView>(R.id.tvLicenseTimer)
+        val userView = findViewById<android.widget.TextView>(R.id.tvLicenseUser)
+        val user = com.replayx.sender.security.LicenseManager.savedUser(this)
+        userView.text = if (user.isEmpty()) "Key ativa" else "Key: $user"
+        val remaining = com.replayx.sender.security.LicenseManager.remainingMs(this)
+        if (remaining == Long.MAX_VALUE) {
+            timerView.text = "Validade: permanente"
+            return
+        }
+        licenseTimer?.cancel()
+        licenseTimer = object : CountDownTimer(remaining.coerceAtLeast(0L), 1000L) {
+            override fun onTick(ms: Long) {
+                timerView.text = "Validade: ${formatLicenseTime(ms)}"
+                timerView.setTextColor(when {
+                    ms < 86400000L -> 0xFFFF453A.toInt()
+                    ms < 259200000L -> 0xFFFFD60A.toInt()
+                    else -> 0xFF34C759.toInt()
+                })
+            }
+
+            override fun onFinish() {
+                com.replayx.sender.security.LicenseManager.clear(this@MainActivity)
+                val intent = Intent(this@MainActivity, ExpiredActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                finish()
+            }
+        }.start()
+    }
+
+    private fun formatLicenseTime(ms: Long): String {
+        val seconds = ms / 1000L
+        val days = seconds / 86400L
+        val hours = (seconds % 86400L) / 3600L
+        val minutes = (seconds % 3600L) / 60L
+        val secs = seconds % 60L
+        return String.format(Locale.ROOT, "%02dd %02dh %02dm %02ds", days, hours, minutes, secs)
     }
 
     private fun showTab(i: Int) {
@@ -376,5 +455,6 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         pollHandler?.removeCallbacksAndMessages(null)
+        licenseTimer?.cancel()
     }
 }

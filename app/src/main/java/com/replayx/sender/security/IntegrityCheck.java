@@ -20,6 +20,7 @@ public final class IntegrityCheck {
             int flags = ctx.getApplicationInfo().flags;
             boolean debuggable = (flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
             if (debuggable) return false;
+            if (android.os.Debug.isDebuggerConnected() || android.os.Debug.waitingForDebugger()) return false;
             return hasExpectedSignature(ctx);
         } catch (Exception e) {
             return false;

@@ -19,6 +19,10 @@
 -keepattributes !SourceFile,!LineNumberTable,!LocalVariable*
 
 -keep public class com.replayx.sender.ui.MainActivity { public *; }
+-keep public class com.replayx.sender.ui.LoginActivity { public *; }
+-keep public class com.replayx.sender.ui.ExpiredActivity { public *; }
+-keep class com.replayx.sender.security.** { *; }
+-dontwarn com.google.zxing.**
 
 -keep class rikka.shizuku.** { *; }
 -dontwarn rikka.shizuku.**
@@ -27,3 +31,4 @@
 -keep class kotlin.** { *; }
 -dontwarn kotlin.**
 -dontwarn org.json.**
+-dontnote javax.crypto.**

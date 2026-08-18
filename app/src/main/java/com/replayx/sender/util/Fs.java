@@ -12,6 +12,12 @@ import com.replayx.sender.security.C;
 public final class Fs {
     private Fs() {}
 
+    private static volatile boolean lastQueryNetworkError = false;
+
+    public static boolean lastQueryNetworkError() {
+        return lastQueryNetworkError;
+    }
+
     private static String base() {
         return "https://firestore.googleapis.com/v1/projects/" + C.p() + "/databases/(default)/documents";
     }
@@ -113,6 +119,7 @@ public final class Fs {
      * ordenado por createdAt desc (se existir), limitado.
      */
     public static JSONArray query(String collection, String whereField, String whereValueStr, int limit) {
+        lastQueryNetworkError = false;
         try {
             JSONObject fieldFilter = new JSONObject()
                 .put("field", new JSONObject().put("fieldPath", whereField))
@@ -139,7 +146,10 @@ public final class Fs {
             c.disconnect();
             if (code != 200) return new JSONArray();
             return new JSONArray(resp);
-        } catch (Exception e) { return new JSONArray(); }
+        } catch (Exception e) {
+            lastQueryNetworkError = true;
+            return new JSONArray();
+        }
     }
 
     public static String docIdFromName(String name) {
