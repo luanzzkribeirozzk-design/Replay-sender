@@ -1,13 +1,13 @@
 package com.replayx.sender.security;
 
 import android.content.Context;
-import android.provider.Settings;
 import android.os.Build;
+import android.provider.Settings;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** Regras da key Firebase do Sender e estado cifrado do login. */
+/** Licença compartilhada: uma key, no máximo dois dispositivos, sem reset no app. */
 public final class LicenseManager {
     private LicenseManager() {}
 
@@ -19,9 +19,11 @@ public final class LicenseManager {
     private static final String PAUSED = "license_paused";
     private static final String USER = "license_user";
     private static final String DEVICE_ID = "device_id";
+    private static final String DEVICE_COUNT = "license_device_count";
 
     public static final class Result {
         public boolean ok;
+        public boolean networkError;
         public String message = "Falha ao validar key";
         public String key = "";
         public String user = "";
@@ -30,7 +32,7 @@ public final class LicenseManager {
         public long pausedAtSec;
         public int days;
         public int minutes;
-        public boolean networkError;
+        public int deviceCount;
     }
 
     public static Result validate(Context ctx, String rawKey) {
@@ -62,11 +64,6 @@ public final class LicenseManager {
                 out.message = "paused".equals(status) ? "Key pausada" : "Key inativa";
                 return out;
             }
-            String boundDevice = com.replayx.sender.util.Fs.getStr(fields, "deviceId", "");
-            if (!boundDevice.isEmpty() && !boundDevice.equals(myDevice)) {
-                out.message = "Key já está vinculada a outro dispositivo";
-                return out;
-            }
 
             int days = safeInt(com.replayx.sender.util.Fs.getLong(fields, "days", 0L));
             int minutes = safeInt(com.replayx.sender.util.Fs.getLong(fields, "minutes", 0L));
@@ -82,16 +79,63 @@ public final class LicenseManager {
                 return out;
             }
 
-            boolean needsBind = boundDevice.isEmpty() || first == null;
-            if (needsBind) {
+            String legacyDevice = com.replayx.sender.util.Fs.getStr(fields, "deviceId", "");
+            String slot1 = com.replayx.sender.util.Fs.getStr(fields, "slot1DeviceId", "");
+            String slot2 = com.replayx.sender.util.Fs.getStr(fields, "slot2DeviceId", "");
+            String slot1Type = com.replayx.sender.util.Fs.getStr(fields, "slot1Type", "");
+            String slot1Model = com.replayx.sender.util.Fs.getStr(fields, "slot1Model", "");
+            int count = 0;
+            if (!slot1.isEmpty()) count++;
+            if (!slot2.isEmpty()) count++;
+
+            if (slot1.isEmpty() && !legacyDevice.isEmpty()) {
+                JSONObject migration = new JSONObject();
+                StringBuilder migrationMask = new StringBuilder();
+                slot1 = legacyDevice;
+                slot1Type = slot1Type.isEmpty() ? "legacy" : slot1Type;
+                slot1Model = slot1Model.isEmpty()
+                        ? com.replayx.sender.util.Fs.getStr(fields, "deviceModel", "") : slot1Model;
+                putPatch(migration, migrationMask, "slot1DeviceId", slot1);
+                putPatch(migration, migrationMask, "slot1Type", slot1Type);
+                putPatch(migration, migrationMask, "slot1Model", slot1Model);
+                putPatch(migration, migrationMask, "slot1UsedAt", com.replayx.sender.util.Fs.ts(firstSec));
+                if (first == null) putPatch(migration, migrationMask, "firstUsed", com.replayx.sender.util.Fs.ts(firstSec));
+                putPatch(migration, migrationMask, "devicesUsed", com.replayx.sender.util.Fs.num(1));
+                if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, migration, migrationMask.toString(), doc.optString("updateTime", ""))) {
+                    out.message = "Não foi possível migrar o vínculo desta key";
+                    return out;
+                }
+                count = 1;
+            }
+
+            if (!slot1.isEmpty() && slot1.equals(myDevice) || !slot2.isEmpty() && slot2.equals(myDevice)) {
+                // Dispositivo já autorizado; apenas atualiza o estado local.
+            } else {
                 JSONObject patch = new JSONObject();
-                patch.put("deviceId", com.replayx.sender.util.Fs.str(myDevice));
-                patch.put("deviceModel", com.replayx.sender.util.Fs.str(Build.MANUFACTURER + " " + Build.MODEL));
-                if (first == null) patch.put("firstUsed", com.replayx.sender.util.Fs.ts(firstSec));
-                String mask = "updateMask.fieldPaths=deviceId&updateMask.fieldPaths=deviceModel"
-                        + (first == null ? "&updateMask.fieldPaths=firstUsed" : "");
-                if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, patch, mask)) {
-                    out.message = "Não foi possível vincular esta key ao dispositivo";
+                StringBuilder mask = new StringBuilder();
+                if (slot1.isEmpty()) {
+                    putPatch(patch, mask, "slot1DeviceId", myDevice);
+                    putPatch(patch, mask, "slot1Type", "sender");
+                    putPatch(patch, mask, "slot1Model", Build.MANUFACTURER + " " + Build.MODEL);
+                    putPatch(patch, mask, "slot1UsedAt", com.replayx.sender.util.Fs.ts(now));
+                    if (first == null) putPatch(patch, mask, "firstUsed", com.replayx.sender.util.Fs.ts(now));
+                    slot1 = myDevice;
+                    count = Math.max(count, 1);
+                } else if (slot2.isEmpty()) {
+                    putPatch(patch, mask, "slot2DeviceId", myDevice);
+                    putPatch(patch, mask, "slot2Type", "sender");
+                    putPatch(patch, mask, "slot2Model", Build.MANUFACTURER + " " + Build.MODEL);
+                    putPatch(patch, mask, "slot2UsedAt", com.replayx.sender.util.Fs.ts(now));
+                    if (first == null) putPatch(patch, mask, "firstUsed", com.replayx.sender.util.Fs.ts(now));
+                    slot2 = myDevice;
+                    count = 2;
+                } else {
+                    out.message = "Esta key já está vinculada a 2 dispositivos";
+                    return out;
+                }
+                putPatch(patch, mask, "devicesUsed", com.replayx.sender.util.Fs.num(count));
+                if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, patch, mask.toString(), doc.optString("updateTime", ""))) {
+                    out.message = "Não foi possível registrar este dispositivo";
                     return out;
                 }
             }
@@ -105,6 +149,7 @@ public final class LicenseManager {
             out.pausedAtSec = pausedSec;
             out.days = days;
             out.minutes = minutes;
+            out.deviceCount = Math.min(2, count > 0 ? count : (slot1.isEmpty() ? 0 : 1) + (slot2.isEmpty() ? 0 : 1));
             save(ctx, out);
             return out;
         } catch (Exception e) {
@@ -112,6 +157,12 @@ public final class LicenseManager {
             out.message = "Não foi possível validar a key agora";
             return out;
         }
+    }
+
+    private static void putPatch(JSONObject patch, StringBuilder mask, String path, Object value) throws Exception {
+        patch.put(path, value);
+        if (mask.length() > 0) mask.append('&');
+        mask.append("updateMask.fieldPaths=").append(path);
     }
 
     public static void save(Context ctx, Result r) {
@@ -122,10 +173,15 @@ public final class LicenseManager {
         SecureStore.put(ctx, STATUS, r.status);
         SecureStore.put(ctx, PAUSED, String.valueOf(r.pausedAtSec));
         SecureStore.put(ctx, USER, r.user);
+        SecureStore.put(ctx, DEVICE_COUNT, String.valueOf(r.deviceCount));
     }
 
     public static String savedKey(Context ctx) { return SecureStore.get(ctx, KEY, ""); }
     public static String savedUser(Context ctx) { return SecureStore.get(ctx, USER, ""); }
+    public static int savedDeviceCount(Context ctx) {
+        try { return Integer.parseInt(SecureStore.get(ctx, DEVICE_COUNT, "1")); }
+        catch (Exception e) { return 1; }
+    }
 
     public static boolean hasLocalLicense(Context ctx) {
         String key = savedKey(ctx);
@@ -160,6 +216,7 @@ public final class LicenseManager {
         SecureStore.remove(ctx, STATUS);
         SecureStore.remove(ctx, PAUSED);
         SecureStore.remove(ctx, USER);
+        SecureStore.remove(ctx, DEVICE_COUNT);
     }
 
     public static String stableDeviceId(Context ctx) {

@@ -82,8 +82,15 @@ public final class Fs {
         return patchDoc(path, fields, null);
     }
     public static boolean patchDoc(String path, JSONObject fields, String updateMaskQuery) {
+        return patchDoc(path, fields, updateMaskQuery, null);
+    }
+
+    public static boolean patchDoc(String path, JSONObject fields, String updateMaskQuery, String updateTime) {
         try {
             String q = "?key=" + C.k() + (updateMaskQuery != null ? "&" + updateMaskQuery : "");
+            if (updateTime != null && !updateTime.isEmpty()) {
+                q += "&currentDocument.updateTime=" + java.net.URLEncoder.encode(updateTime, "UTF-8");
+            }
             URL url = new URL(base() + "/" + path + q);
             HttpURLConnection c = (HttpURLConnection) url.openConnection();
             c.setRequestMethod("PATCH");

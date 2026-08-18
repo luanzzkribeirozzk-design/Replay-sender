@@ -21,7 +21,7 @@
 -keep public class com.replayx.sender.ui.MainActivity { public *; }
 -keep public class com.replayx.sender.ui.LoginActivity { public *; }
 -keep public class com.replayx.sender.ui.ExpiredActivity { public *; }
--keep class com.replayx.sender.security.** { *; }
+-keepclassmembers class com.replayx.sender.security.SecureStore { *; }
 -dontwarn com.google.zxing.**
 
 -keep class rikka.shizuku.** { *; }

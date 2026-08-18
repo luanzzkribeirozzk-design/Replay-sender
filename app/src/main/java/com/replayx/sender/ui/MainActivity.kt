@@ -145,7 +145,8 @@ class MainActivity : AppCompatActivity() {
         val timerView = findViewById<android.widget.TextView>(R.id.tvLicenseTimer)
         val userView = findViewById<android.widget.TextView>(R.id.tvLicenseUser)
         val user = com.replayx.sender.security.LicenseManager.savedUser(this)
-        userView.text = if (user.isEmpty()) "Key ativa" else "Key: $user"
+        val deviceCount = com.replayx.sender.security.LicenseManager.savedDeviceCount(this)
+        userView.text = (if (user.isEmpty()) "Key ativa" else "Key: $user") + " · Dispositivos: $deviceCount/2"
         val remaining = com.replayx.sender.security.LicenseManager.remainingMs(this)
         if (remaining == Long.MAX_VALUE) {
             timerView.text = "Validade: permanente"
