@@ -16,19 +16,14 @@
 }
 
 -renamesourcefileattribute x
--keepattributes !SourceFile,!LineNumberTable,!LocalVariable*
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
--keep public class com.replayx.sender.ui.MainActivity { public *; }
--keep public class com.replayx.sender.ui.LoginActivity { public *; }
--keep public class com.replayx.sender.ui.ExpiredActivity { public *; }
--keepclassmembers class com.replayx.sender.security.SecureStore { *; }
--dontwarn com.google.zxing.**
+# Componentes declarados no Manifest são preservados pelo Android Gradle Plugin.
+# Não manter a UI inteira nem os nomes da lógica de licença.
 
+# Bibliotecas com descoberta/reflexão em runtime.
 -keep class rikka.shizuku.** { *; }
 -dontwarn rikka.shizuku.**
--keep class androidx.** { *; }
--dontwarn androidx.**
--keep class kotlin.** { *; }
--dontwarn kotlin.**
 -dontwarn org.json.**
--dontnote javax.crypto.**
+-dontwarn javax.crypto.**
+-dontwarn android.security.keystore.**

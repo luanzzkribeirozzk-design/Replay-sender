@@ -53,16 +53,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (!com.replayx.sender.security.IntegrityCheck.isValid(this)) {
-            finish()
-            return
-        }
-        if (!com.replayx.sender.security.LicenseManager.hasLocalLicense(this)) {
-            val intent = Intent(this, LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            startActivity(intent)
-            finish()
+        if (!com.replayx.sender.security.SecurityGate.allow(this)) {
+            redirectToLogin()
             return
         }
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
@@ -277,6 +269,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun gerarCodigo() {
+        if (!com.replayx.sender.security.SecurityGate.allow(this)) {
+            redirectToLogin()
+            return
+        }
         lifecycleScope.launch {
             log("[..] gerando código de pareamento...")
             val code = PairingManager.genCode()
@@ -348,6 +344,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun enviarReplay(pkg: String, label: String) {
+        if (!com.replayx.sender.security.SecurityGate.allow(this)) {
+            redirectToLogin()
+            return
+        }
         overlayAguarde.visibility = View.VISIBLE
         tvAguarde.text = "Enviando replay $label…"
         val startMs = System.currentTimeMillis()
@@ -372,6 +372,15 @@ class MainActivity : AppCompatActivity() {
             log("--------------------------------")
             overlayAguarde.visibility = View.GONE
         }
+    }
+
+    private fun redirectToLogin() {
+        licenseTimer?.cancel()
+        val intent = Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
     }
 
     private fun copiarCodigo() {
