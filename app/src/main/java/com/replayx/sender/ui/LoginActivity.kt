@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ProgressBar
@@ -24,13 +23,11 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var splash: View
     private lateinit var switchRemember: SwitchMaterial
-    private lateinit var switchHide: SwitchMaterial
     private val executor = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         if (!IntegrityCheck.isValid(this)) {
             finish()
             return
@@ -42,11 +39,9 @@ class LoginActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         splash = findViewById(R.id.splashScreen)
         switchRemember = findViewById(R.id.switchRemember)
-        switchHide = findViewById(R.id.switchHideStreamLogin)
 
         switchRemember.isChecked = true
         switchRemember.isEnabled = false
-        switchHide.setOnCheckedChangeListener { _, checked -> applySecureWindow(checked) }
         btnLogin.setOnClickListener { login(false) }
         etKey.setOnEditorActionListener { _, action, _ ->
             if (action == EditorInfo.IME_ACTION_DONE) { login(false); true } else false
@@ -99,11 +94,6 @@ class LoginActivity : AppCompatActivity() {
         }
         startActivity(intent)
         finish()
-    }
-
-    private fun applySecureWindow(active: Boolean) {
-        if (active) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 
     private fun setLoading(loading: Boolean) {

@@ -3,7 +3,6 @@ package com.replayx.sender.ui
 import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
-import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -13,7 +12,6 @@ import com.replayx.sender.security.LicenseManager
 class ExpiredActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         LicenseManager.clear(this)
 
         val root = LinearLayout(this).apply {

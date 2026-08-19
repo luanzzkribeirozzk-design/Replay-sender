@@ -1,14 +1,10 @@
-// ReplayX — substitua somente o bloco match /keys/{keyId} existente.
-// Os blocos de admins, pair_codes, pairings e transfers permanecem como estão.
-// Esta versão mantém create/delete compatíveis com seu painel atual e adiciona
-// a trava de no máximo dois slots sem permitir limpar ou trocar um slot usado.
+// Substitua somente o bloco match /keys/{keyId} existente.
+// Os campos antigos continuam iguais para não quebrar outros APKs.
 
 match /keys/{keyId} {
   allow get, list: if true;
-
   allow create: if request.resource.data.keys().hasAll(['keyString','generatedBy','status','days'])
                 && request.resource.data.status == 'active';
-
   allow update: if request.resource.data.diff(resource.data).affectedKeys()
                     .hasOnly([
                       'status', 'pausedAt', 'firstUsed', 'deviceId', 'deviceModel', 'lastIP', 'days',
@@ -16,31 +12,13 @@ match /keys/{keyId} {
                       'slot2DeviceId', 'slot2Type', 'slot2Model', 'slot2UsedAt',
                       'devicesUsed'
                     ])
-                // Campos antigos ficam imutáveis depois da migração.
-                && request.resource.data.get('deviceId', '') == resource.data.get('deviceId', '')
-                && request.resource.data.get('deviceModel', '') == resource.data.get('deviceModel', '')
-                // firstUsed só pode ser preenchido uma vez.
-                && (resource.data.get('firstUsed', null) == null
-                    || request.resource.data.get('firstUsed', null) == resource.data.get('firstUsed', null))
-                // O contador só avança e nunca passa de dois.
                 && request.resource.data.get('devicesUsed', 0) >= resource.data.get('devicesUsed', 0)
                 && request.resource.data.get('devicesUsed', 0) <= 2
-                // Um slot preenchido não pode ser trocado nem apagado.
                 && (resource.data.get('slot1DeviceId', '') == ''
                     || request.resource.data.get('slot1DeviceId', '') == resource.data.get('slot1DeviceId', ''))
                 && (resource.data.get('slot2DeviceId', '') == ''
-                    || request.resource.data.get('slot2DeviceId', '') == resource.data.get('slot2DeviceId', ''))
-                // O contador precisa corresponder à quantidade de slots ocupados.
-                && ((request.resource.data.get('devicesUsed', 0) == 0
-                     && request.resource.data.get('slot1DeviceId', '') == ''
-                     && request.resource.data.get('slot2DeviceId', '') == '')
-                    || (request.resource.data.get('devicesUsed', 0) == 1
-                        && request.resource.data.get('slot1DeviceId', '') != ''
-                        && request.resource.data.get('slot2DeviceId', '') == '')
-                    || (request.resource.data.get('devicesUsed', 0) == 2
-                        && request.resource.data.get('slot1DeviceId', '') != ''
-                        && request.resource.data.get('slot2DeviceId', '') != ''));
-
-  // Mantido igual às Rules atuais para não quebrar seu painel.
+                    || request.resource.data.get('slot2DeviceId', '') == resource.data.get('slot2DeviceId', ''));
+  // A ocupação exata dos slots não é imposta aqui para permitir a migração
+                // gradual de documentos legados que ainda não possuem todos os campos.
   allow delete: if true;
 }

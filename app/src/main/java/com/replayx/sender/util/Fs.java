@@ -111,10 +111,27 @@ public final class Fs {
         lastPatchError = "";
         HttpURLConnection c = null;
         try {
-            String q = "?key=" + C.k() + (updateMaskQuery != null ? "&" + updateMaskQuery : "");
-            if (updateTime != null && !updateTime.isEmpty()) {
-                q += "&currentDocument.updateTime=" + java.net.URLEncoder.encode(updateTime, "UTF-8");
+            StringBuilder query = new StringBuilder("?key=")
+                    .append(java.net.URLEncoder.encode(C.k(), "UTF-8"));
+            if (updateMaskQuery != null && !updateMaskQuery.isEmpty()) {
+                // O Firestore REST aceita um parâmetro updateMask.fieldPaths por campo.
+                // Reencode cada par para preservar corretamente a query em qualquer proxy.
+                for (String part : updateMaskQuery.split("&")) {
+                    if (part == null || part.isEmpty()) continue;
+                    int equals = part.indexOf('=');
+                    String name = equals > 0 ? part.substring(0, equals) : part;
+                    String value = equals > 0 ? part.substring(equals + 1) : "";
+                    query.append('&')
+                            .append(java.net.URLEncoder.encode(name, "UTF-8"))
+                            .append('=')
+                            .append(java.net.URLEncoder.encode(value, "UTF-8"));
+                }
             }
+            if (updateTime != null && !updateTime.isEmpty()) {
+                query.append("&currentDocument.updateTime=")
+                        .append(java.net.URLEncoder.encode(updateTime, "UTF-8"));
+            }
+            String q = query.toString();
             URL url = new URL(base() + "/" + path + q);
             c = (HttpURLConnection) url.openConnection();
             c.setRequestMethod("PATCH");
