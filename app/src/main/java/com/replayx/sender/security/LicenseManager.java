@@ -101,7 +101,7 @@ public final class LicenseManager {
                 putPatch(migration, migrationMask, "slot1UsedAt", com.replayx.sender.util.Fs.ts(firstSec));
                 if (first == null) putPatch(migration, migrationMask, "firstUsed", com.replayx.sender.util.Fs.ts(firstSec));
                 putPatch(migration, migrationMask, "devicesUsed", com.replayx.sender.util.Fs.num(1));
-                if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, migration, migrationMask.toString(), doc.optString("updateTime", ""))) {
+                if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, migration, migrationMask.toString(), "")) {
                     int code = com.replayx.sender.util.Fs.lastPatchHttpCode();
                     out.message = code == 403
                             ? "Firebase recusou a migração; publique as Rules de dois dispositivos"
@@ -137,7 +137,7 @@ public final class LicenseManager {
                     return out;
                 }
                 putPatch(patch, mask, "devicesUsed", com.replayx.sender.util.Fs.num(count));
-                if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, patch, mask.toString(), doc.optString("updateTime", ""))) {
+                if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, patch, mask.toString(), "")) {
                     int code = com.replayx.sender.util.Fs.lastPatchHttpCode();
                     out.message = code == 403
                             ? "Firebase recusou o registro; publique as Rules de dois dispositivos"
