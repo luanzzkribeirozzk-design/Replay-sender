@@ -99,32 +99,25 @@ public final class Fs {
     }
 
     public static boolean patchDoc(String path, JSONObject fields, String updateMaskQuery, String updateTime) {
-        boolean ok = patchDocOnce(path, fields, updateMaskQuery, updateTime);
-        int firstCode = lastPatchHttpCode;
-        String firstError = lastPatchError;
-
-        // A stale/unsupported precondition should not block a field-masked update.
-        // Firestore Rules still protect already occupied slots from being replaced.
-        if (!ok && updateTime != null && !updateTime.isEmpty()
-                && (lastPatchHttpCode == 400 || lastPatchHttpCode == 409 || lastPatchHttpCode == 412)) {
-            ok = patchDocOnce(path, fields, updateMaskQuery, "");
-            firstCode = lastPatchHttpCode;
-            firstError = lastPatchError;
-        }
-
-        // Some mobile/proxy combinations intermittently return HTTP 400 for the
-        // documents.patch query even though the write itself is valid. Retry the
-        // same field-masked update through documents:commit, whose request body
-        // carries the mask as a JSON array instead of repeated URL parameters.
-        if (!ok && (lastPatchHttpCode == 400 || lastPatchHttpCode == 409 || lastPatchHttpCode == 412)) {
+        // License registration sends a field mask. Use Commit directly for masked
+        // writes so the app never exposes the flaky documents.patch HTTP 400 path.
+        // The Commit body is the same operation but uses Firestore's canonical
+        // relative document resource name and a JSON fieldPaths array.
+        if (updateMaskQuery != null && !updateMaskQuery.isEmpty()) {
             boolean committed = commitDoc(path, fields, updateMaskQuery, updateTime);
-            if (!committed && firstError != null && !firstError.isEmpty()) {
-                lastPatchError = "PATCH " + firstCode + ": " + firstError
-                        + "\nCOMMIT " + lastPatchHttpCode + ": " + lastPatchError;
+            if (committed) return true;
+            int commitCode = lastPatchHttpCode;
+            String commitError = lastPatchError;
+            boolean patched = patchDocOnce(path, fields, updateMaskQuery, updateTime);
+            if (!patched && commitError != null && !commitError.isEmpty()) {
+                lastPatchError = "COMMIT " + commitCode + ": " + commitError
+                        + "\nPATCH " + lastPatchHttpCode + ": " + lastPatchError;
+                // Keep the primary Commit result visible to LicenseManager.
+                lastPatchHttpCode = commitCode;
             }
-            return committed;
+            return patched;
         }
-        return ok;
+        return patchDocOnce(path, fields, updateMaskQuery, updateTime);
     }
 
     private static boolean patchDocOnce(String path, JSONObject fields, String updateMaskQuery, String updateTime) {
