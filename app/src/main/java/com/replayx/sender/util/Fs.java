@@ -5,6 +5,9 @@ import org.json.JSONObject;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import com.replayx.sender.security.C;
 
@@ -97,11 +100,29 @@ public final class Fs {
 
     public static boolean patchDoc(String path, JSONObject fields, String updateMaskQuery, String updateTime) {
         boolean ok = patchDocOnce(path, fields, updateMaskQuery, updateTime);
+        int firstCode = lastPatchHttpCode;
+        String firstError = lastPatchError;
+
         // A stale/unsupported precondition should not block a field-masked update.
         // Firestore Rules still protect already occupied slots from being replaced.
         if (!ok && updateTime != null && !updateTime.isEmpty()
                 && (lastPatchHttpCode == 400 || lastPatchHttpCode == 409 || lastPatchHttpCode == 412)) {
             ok = patchDocOnce(path, fields, updateMaskQuery, "");
+            firstCode = lastPatchHttpCode;
+            firstError = lastPatchError;
+        }
+
+        // Some mobile/proxy combinations intermittently return HTTP 400 for the
+        // documents.patch query even though the write itself is valid. Retry the
+        // same field-masked update through documents:commit, whose request body
+        // carries the mask as a JSON array instead of repeated URL parameters.
+        if (!ok && (lastPatchHttpCode == 400 || lastPatchHttpCode == 409 || lastPatchHttpCode == 412)) {
+            boolean committed = commitDoc(path, fields, updateMaskQuery, updateTime);
+            if (!committed && firstError != null && !firstError.isEmpty()) {
+                lastPatchError = "PATCH " + firstCode + ": " + firstError
+                        + "\nCOMMIT " + lastPatchHttpCode + ": " + lastPatchError;
+            }
+            return committed;
         }
         return ok;
     }
@@ -154,6 +175,62 @@ public final class Fs {
         } finally {
             if (c != null) c.disconnect();
         }
+    }
+
+    private static boolean commitDoc(String path, JSONObject fields, String updateMaskQuery, String updateTime) {
+        HttpURLConnection c = null;
+        try {
+            JSONObject update = new JSONObject()
+                    .put("name", base() + "/" + path)
+                    .put("fields", fields);
+            List<String> maskFields = parseMaskFields(updateMaskQuery);
+            if (!maskFields.isEmpty()) {
+                JSONArray fieldPaths = new JSONArray();
+                for (String field : maskFields) fieldPaths.put(field);
+                update.put("updateMask", new JSONObject().put("fieldPaths", fieldPaths));
+            }
+            JSONObject write = new JSONObject().put("update", update);
+            if (updateTime != null && !updateTime.isEmpty()) {
+                write.put("currentDocument", new JSONObject().put("updateTime", updateTime));
+            }
+            JSONObject body = new JSONObject().put("writes", new JSONArray().put(write));
+
+            URL url = new URL(base() + ":commit?key="
+                    + java.net.URLEncoder.encode(C.k(), "UTF-8"));
+            c = (HttpURLConnection) url.openConnection();
+            c.setRequestMethod("POST");
+            c.setRequestProperty("Content-Type", "application/json");
+            c.setDoOutput(true);
+            c.setConnectTimeout(10000);
+            c.setReadTimeout(15000);
+            OutputStream os = c.getOutputStream();
+            os.write(body.toString().getBytes("UTF-8"));
+            os.close();
+            int code = c.getResponseCode();
+            String response = readAll(code >= 200 && code < 300 ? c.getInputStream() : c.getErrorStream());
+            lastPatchHttpCode = code;
+            lastPatchError = response == null ? "" : response;
+            return code >= 200 && code < 300;
+        } catch (Exception e) {
+            lastPatchHttpCode = 0;
+            lastPatchError = e.getClass().getSimpleName();
+            return false;
+        } finally {
+            if (c != null) c.disconnect();
+        }
+    }
+
+    private static List<String> parseMaskFields(String updateMaskQuery) throws Exception {
+        List<String> result = new ArrayList<>();
+        if (updateMaskQuery == null || updateMaskQuery.isEmpty()) return result;
+        for (String part : updateMaskQuery.split("&")) {
+            if (part == null || part.isEmpty()) continue;
+            int equals = part.indexOf('=');
+            String value = equals >= 0 ? part.substring(equals + 1) : part;
+            value = URLDecoder.decode(value, "UTF-8");
+            if (!value.isEmpty() && !result.contains(value)) result.add(value);
+        }
+        return result;
     }
 
     public static boolean deleteDoc(String path) {
