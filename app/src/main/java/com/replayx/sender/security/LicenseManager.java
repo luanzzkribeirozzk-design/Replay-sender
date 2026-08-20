@@ -165,7 +165,22 @@ public final class LicenseManager {
     }
 
     private static void putPatch(JSONObject patch, StringBuilder mask, String path, Object value) throws Exception {
-        patch.put(path, value);
+        // Firestore REST exige que cada campo seja um Value tipado, nunca uma
+        // String/Number Java crua. O erro HTTP 400 vinha dos campos textuais
+        // do slot enviados sem o wrapper stringValue.
+        JSONObject firestoreValue;
+        if (value instanceof JSONObject) {
+            firestoreValue = (JSONObject) value;
+        } else if (value == null) {
+            firestoreValue = com.replayx.sender.util.Fs.nul();
+        } else if (value instanceof Boolean) {
+            firestoreValue = com.replayx.sender.util.Fs.bool((Boolean) value);
+        } else if (value instanceof Number) {
+            firestoreValue = com.replayx.sender.util.Fs.num(((Number) value).longValue());
+        } else {
+            firestoreValue = com.replayx.sender.util.Fs.str(String.valueOf(value));
+        }
+        patch.put(path, firestoreValue);
         if (mask.length() > 0) mask.append('&');
         mask.append("updateMask.fieldPaths=").append(path);
     }
