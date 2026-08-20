@@ -181,15 +181,16 @@ public final class Fs {
         HttpURLConnection c = null;
         try {
             JSONObject update = new JSONObject()
-                    .put("name", base() + "/" + path)
+                    .put("name", "projects/" + C.p() + "/databases/(default)/documents/" + path)
                     .put("fields", fields);
+            JSONObject write = new JSONObject().put("update", update);
             List<String> maskFields = parseMaskFields(updateMaskQuery);
             if (!maskFields.isEmpty()) {
                 JSONArray fieldPaths = new JSONArray();
                 for (String field : maskFields) fieldPaths.put(field);
-                update.put("updateMask", new JSONObject().put("fieldPaths", fieldPaths));
+                // updateMask belongs to Write, not to the Document object.
+                write.put("updateMask", new JSONObject().put("fieldPaths", fieldPaths));
             }
-            JSONObject write = new JSONObject().put("update", update);
             if (updateTime != null && !updateTime.isEmpty()) {
                 write.put("currentDocument", new JSONObject().put("updateTime", updateTime));
             }

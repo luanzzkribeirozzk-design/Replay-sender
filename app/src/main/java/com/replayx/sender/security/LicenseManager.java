@@ -84,9 +84,11 @@ public final class LicenseManager {
             String slot2 = com.replayx.sender.util.Fs.getStr(fields, "slot2DeviceId", "");
             String slot1Type = com.replayx.sender.util.Fs.getStr(fields, "slot1Type", "");
             String slot1Model = com.replayx.sender.util.Fs.getStr(fields, "slot1Model", "");
-            int count = 0;
-            if (!slot1.isEmpty()) count++;
-            if (!slot2.isEmpty()) count++;
+            // O painel cria devicesUsed=0. O contador é a fonte primária:
+            // primeiro vínculo 0->1, segundo vínculo 1->2. Os slots guardam
+            // apenas quais dispositivos correspondem a cada uso.
+            int storedCount = safeInt(com.replayx.sender.util.Fs.getLong(fields, "devicesUsed", 0L));
+            int count = Math.min(2, Math.max(storedCount, (!slot1.isEmpty() ? 1 : 0) + (!slot2.isEmpty() ? 1 : 0)));
 
             if (slot1.isEmpty() && !legacyDevice.isEmpty()) {
                 JSONObject migration = new JSONObject();
@@ -116,7 +118,10 @@ public final class LicenseManager {
             } else {
                 JSONObject patch = new JSONObject();
                 StringBuilder mask = new StringBuilder();
-                if (slot1.isEmpty()) {
+                if (count >= 2) {
+                    out.message = "Esta key já está vinculada a 2 dispositivos";
+                    return out;
+                } else if (slot1.isEmpty()) {
                     putPatch(patch, mask, "slot1DeviceId", myDevice);
                     putPatch(patch, mask, "slot1Type", "sender");
                     putPatch(patch, mask, "slot1Model", Build.MANUFACTURER + " " + Build.MODEL);
@@ -133,7 +138,7 @@ public final class LicenseManager {
                     slot2 = myDevice;
                     count = 2;
                 } else {
-                    out.message = "Esta key já está vinculada a 2 dispositivos";
+                    out.message = "Não foi possível localizar um slot livre";
                     return out;
                 }
                 putPatch(patch, mask, "devicesUsed", com.replayx.sender.util.Fs.num(count));
