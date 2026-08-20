@@ -48,7 +48,7 @@ public final class LicenseManager {
             if (results.length() == 0 || !results.getJSONObject(0).has("document")) {
                 if (com.replayx.sender.util.Fs.lastQueryNetworkError()) {
                     out.networkError = true;
-                    out.message = "Não foi possível validar a key agora";
+                    out.message = com.replayx.sender.util.Fs.lastQueryDiagnostic("consulta da key");
                 } else {
                     out.message = "Key inválida ou apagada";
                 }
@@ -104,10 +104,7 @@ public final class LicenseManager {
                 if (first == null) putPatch(migration, migrationMask, "firstUsed", com.replayx.sender.util.Fs.ts(firstSec));
                 putPatch(migration, migrationMask, "devicesUsed", com.replayx.sender.util.Fs.num(1));
                 if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, migration, migrationMask.toString(), "")) {
-                    int code = com.replayx.sender.util.Fs.lastPatchHttpCode();
-                    out.message = code == 403
-                            ? "Firebase recusou a migração; publique as Rules de dois dispositivos"
-                            : "Não foi possível migrar o vínculo desta key (HTTP " + code + ")";
+                    out.message = com.replayx.sender.util.Fs.lastPatchDiagnostic("migração");
                     return out;
                 }
                 count = 1;
@@ -143,12 +140,7 @@ public final class LicenseManager {
                 }
                 putPatch(patch, mask, "devicesUsed", com.replayx.sender.util.Fs.num(count));
                 if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, patch, mask.toString(), "")) {
-                    int code = com.replayx.sender.util.Fs.lastPatchHttpCode();
-                    out.message = code == 403
-                            ? "Firebase recusou o registro; publique as Rules de dois dispositivos"
-                            : code == 412 || code == 409
-                                ? "A key foi alterada; tente entrar novamente"
-                                : "Não foi possível registrar este dispositivo (HTTP " + code + ")";
+                    out.message = com.replayx.sender.util.Fs.lastPatchDiagnostic("registro do dispositivo");
                     return out;
                 }
             }

@@ -16,11 +16,17 @@ public final class Fs {
     private Fs() {}
 
     private static volatile boolean lastQueryNetworkError = false;
+    private static volatile int lastQueryHttpCode = 0;
+    private static volatile String lastQueryError = "";
     private static volatile int lastPatchHttpCode = 0;
     private static volatile String lastPatchError = "";
 
     public static boolean lastQueryNetworkError() {
         return lastQueryNetworkError;
+    }
+
+    public static String lastQueryDiagnostic(String operation) {
+        return diagnostic(operation, lastQueryHttpCode, lastQueryError);
     }
 
     public static int lastPatchHttpCode() {
@@ -29,6 +35,25 @@ public final class Fs {
 
     public static String lastPatchError() {
         return lastPatchError;
+    }
+
+    public static String lastPatchDiagnostic(String operation) {
+        return diagnostic(operation, lastPatchHttpCode, lastPatchError);
+    }
+
+    private static String diagnostic(String operation, int code, String raw) {
+        String message = "";
+        try {
+            JSONObject root = new JSONObject(raw == null ? "" : raw);
+            JSONObject error = root.optJSONObject("error");
+            if (error != null) message = error.optString("message", "");
+        } catch (Exception ignored) { }
+        if (message.isEmpty()) message = raw == null ? "" : raw;
+        message = message.replaceAll("[\\r\\n]+", " ").trim();
+        message = message.replaceAll("(?i)(key=)[^&\\s]+", "$1[oculto]");
+        if (message.isEmpty()) message = "sem corpo de resposta";
+        if (message.length() > 280) message = message.substring(0, 280) + "…";
+        return operation + " (HTTP " + code + "): " + message;
     }
 
     private static String base() {
@@ -246,6 +271,8 @@ public final class Fs {
      */
     public static JSONArray query(String collection, String whereField, String whereValueStr, int limit) {
         lastQueryNetworkError = false;
+        lastQueryHttpCode = 0;
+        lastQueryError = "";
         try {
             JSONObject fieldFilter = new JSONObject()
                 .put("field", new JSONObject().put("fieldPath", whereField))
@@ -269,11 +296,14 @@ public final class Fs {
             os.close();
             int code = c.getResponseCode();
             String resp = readAll(code >= 200 && code < 300 ? c.getInputStream() : c.getErrorStream());
+            lastQueryHttpCode = code;
+            lastQueryError = resp == null ? "" : resp;
             c.disconnect();
-            if (code != 200) return new JSONArray();
+            if (code != 200) { lastQueryNetworkError = true; return new JSONArray(); }
             return new JSONArray(resp);
         } catch (Exception e) {
             lastQueryNetworkError = true;
+            lastQueryError = e.getClass().getSimpleName();
             return new JSONArray();
         }
     }
