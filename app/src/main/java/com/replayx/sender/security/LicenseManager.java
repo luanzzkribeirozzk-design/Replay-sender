@@ -215,6 +215,7 @@ public final class LicenseManager {
         SecureStore.put(ctx, PAUSED, String.valueOf(r.pausedAtSec));
         SecureStore.put(ctx, USER, r.user);
         SecureStore.put(ctx, DEVICE_COUNT, String.valueOf(r.deviceCount));
+        SecureStore.putRemembered(ctx, r.key);
         SecureStore.put(ctx, REMEMBER, "true");
     }
 
@@ -227,6 +228,7 @@ public final class LicenseManager {
         SecureStore.remove(ctx, PAUSED);
         SecureStore.remove(ctx, USER);
         SecureStore.remove(ctx, DEVICE_COUNT);
+        SecureStore.removeRemembered(ctx);
     }
 
     public static boolean shouldRemember(Context ctx) {
@@ -251,6 +253,7 @@ public final class LicenseManager {
 
     public static String savedKey(Context ctx) {
         String value = SecureStore.get(ctx, KEY, "");
+        if (value.isEmpty()) value = SecureStore.getRemembered(ctx, "");
         return value.isEmpty() ? processKey : value;
     }
     public static String savedUser(Context ctx) {
