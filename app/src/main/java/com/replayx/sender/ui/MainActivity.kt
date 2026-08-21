@@ -116,7 +116,7 @@ class MainActivity : AppCompatActivity() {
         licenseValidationRunning = true
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
-                com.replayx.sender.security.LicenseManager.validate(this@MainActivity, key)
+                com.replayx.sender.security.LicenseManager.validate(this@MainActivity, key, LicenseManager.shouldRemember(this@MainActivity))
             }
             licenseValidationRunning = false
             if (!result.ok && !result.networkError) {

@@ -20,6 +20,7 @@ public final class LicenseManager {
     private static final String USER = "license_user";
     private static final String DEVICE_ID = "device_id";
     private static final String DEVICE_COUNT = "license_device_count";
+    private static final String REMEMBER = "license_remember";
 
     // Mantém a sessão recém-validada durante o processo caso o Android Keystore
     // esteja temporariamente indisponível para uma leitura imediata.
@@ -47,6 +48,10 @@ public final class LicenseManager {
     }
 
     public static Result validate(Context ctx, String rawKey) {
+        return validate(ctx, rawKey, true);
+    }
+
+    public static Result validate(Context ctx, String rawKey, boolean remember) {
         Result out = new Result();
         String key = rawKey == null ? "" : rawKey.trim();
         if (key.isEmpty() || key.length() > 160) {
@@ -166,7 +171,11 @@ public final class LicenseManager {
             out.days = days;
             out.minutes = minutes;
             out.deviceCount = Math.min(2, count > 0 ? count : (slot1.isEmpty() ? 0 : 1) + (slot2.isEmpty() ? 0 : 1));
-            save(ctx, out);
+            if (remember) {
+                save(ctx, out);
+            } else {
+                clearPersistedSession(ctx);
+            }
             cacheProcessSession(out);
             return out;
         } catch (Exception e) {
@@ -206,6 +215,27 @@ public final class LicenseManager {
         SecureStore.put(ctx, PAUSED, String.valueOf(r.pausedAtSec));
         SecureStore.put(ctx, USER, r.user);
         SecureStore.put(ctx, DEVICE_COUNT, String.valueOf(r.deviceCount));
+        SecureStore.put(ctx, REMEMBER, "true");
+    }
+
+    private static void clearPersistedSession(Context ctx) {
+        SecureStore.remove(ctx, KEY);
+        SecureStore.remove(ctx, FIRST);
+        SecureStore.remove(ctx, DAYS);
+        SecureStore.remove(ctx, MINUTES);
+        SecureStore.remove(ctx, STATUS);
+        SecureStore.remove(ctx, PAUSED);
+        SecureStore.remove(ctx, USER);
+        SecureStore.remove(ctx, DEVICE_COUNT);
+    }
+
+    public static boolean shouldRemember(Context ctx) {
+        return "true".equalsIgnoreCase(SecureStore.get(ctx, REMEMBER, "true"));
+    }
+
+    public static void setRemember(Context ctx, boolean remember) {
+        SecureStore.put(ctx, REMEMBER, remember ? "true" : "false");
+        if (!remember) clearPersistedSession(ctx);
     }
 
     private static void cacheProcessSession(Result r) {
@@ -272,14 +302,8 @@ public final class LicenseManager {
         processDays = 0;
         processMinutes = 0;
         processDeviceCount = 0;
-        SecureStore.remove(ctx, KEY);
-        SecureStore.remove(ctx, FIRST);
-        SecureStore.remove(ctx, DAYS);
-        SecureStore.remove(ctx, MINUTES);
-        SecureStore.remove(ctx, STATUS);
-        SecureStore.remove(ctx, PAUSED);
-        SecureStore.remove(ctx, USER);
-        SecureStore.remove(ctx, DEVICE_COUNT);
+        clearPersistedSession(ctx);
+        SecureStore.remove(ctx, REMEMBER);
     }
 
     public static String stableDeviceId(Context ctx) {

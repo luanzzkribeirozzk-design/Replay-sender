@@ -40,8 +40,8 @@ class LoginActivity : AppCompatActivity() {
         splash = findViewById(R.id.splashScreen)
         switchRemember = findViewById(R.id.switchRemember)
 
-        switchRemember.isChecked = true
-        switchRemember.isEnabled = false
+        switchRemember.isChecked = LicenseManager.shouldRemember(this)
+        switchRemember.isEnabled = true
         btnLogin.setOnClickListener { login(false) }
         etKey.setOnEditorActionListener { _, action, _ ->
             if (action == EditorInfo.IME_ACTION_DONE) { login(false); true } else false
@@ -70,10 +70,12 @@ class LoginActivity : AppCompatActivity() {
         }
         setLoading(true)
         if (!auto) setStatus("Validando key...", 0xFFFFD60A.toInt())
+        val remember = auto || switchRemember.isChecked
         executor.execute {
-            val result = LicenseManager.validate(this, key)
+            val result = LicenseManager.validate(this, key, remember)
             main.post {
                 if (result.ok) {
+                    if (!auto) LicenseManager.setRemember(this, remember)
                     setStatus("Key validada com sucesso", 0xFF34C759.toInt())
                     goMain()
                 } else if (auto && result.networkError && LicenseManager.hasLocalLicense(this)) {
