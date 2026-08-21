@@ -21,6 +21,17 @@ public final class LicenseManager {
     private static final String DEVICE_ID = "device_id";
     private static final String DEVICE_COUNT = "license_device_count";
 
+    // Mantém a sessão recém-validada durante o processo caso o Android Keystore
+    // esteja temporariamente indisponível para uma leitura imediata.
+    private static volatile String processKey = "";
+    private static volatile String processUser = "";
+    private static volatile String processStatus = "active";
+    private static volatile long processFirstUsedSec = -1L;
+    private static volatile long processPausedAtSec = 0L;
+    private static volatile int processDays = 0;
+    private static volatile int processMinutes = 0;
+    private static volatile int processDeviceCount = 0;
+
     public static final class Result {
         public boolean ok;
         public boolean networkError;
@@ -156,6 +167,7 @@ public final class LicenseManager {
             out.minutes = minutes;
             out.deviceCount = Math.min(2, count > 0 ? count : (slot1.isEmpty() ? 0 : 1) + (slot2.isEmpty() ? 0 : 1));
             save(ctx, out);
+            cacheProcessSession(out);
             return out;
         } catch (Exception e) {
             out.networkError = true;
@@ -196,39 +208,70 @@ public final class LicenseManager {
         SecureStore.put(ctx, DEVICE_COUNT, String.valueOf(r.deviceCount));
     }
 
-    public static String savedKey(Context ctx) { return SecureStore.get(ctx, KEY, ""); }
-    public static String savedUser(Context ctx) { return SecureStore.get(ctx, USER, ""); }
+    private static void cacheProcessSession(Result r) {
+        processKey = r.key == null ? "" : r.key;
+        processUser = r.user == null ? "" : r.user;
+        processStatus = r.status == null ? "active" : r.status;
+        processFirstUsedSec = r.firstUsedSec;
+        processPausedAtSec = r.pausedAtSec;
+        processDays = r.days;
+        processMinutes = r.minutes;
+        processDeviceCount = r.deviceCount;
+    }
+
+    public static String savedKey(Context ctx) {
+        String value = SecureStore.get(ctx, KEY, "");
+        return value.isEmpty() ? processKey : value;
+    }
+    public static String savedUser(Context ctx) {
+        String value = SecureStore.get(ctx, USER, "");
+        return value.isEmpty() ? processUser : value;
+    }
     public static int savedDeviceCount(Context ctx) {
-        try { return Integer.parseInt(SecureStore.get(ctx, DEVICE_COUNT, "1")); }
-        catch (Exception e) { return 1; }
+        try { return Integer.parseInt(SecureStore.get(ctx, DEVICE_COUNT, String.valueOf(processDeviceCount))); }
+        catch (Exception e) { return processDeviceCount; }
     }
 
     public static boolean hasLocalLicense(Context ctx) {
         String key = savedKey(ctx);
         if (key.isEmpty()) return false;
-        return remainingMs(ctx) != 0L;
+        return remainingMs(ctx) == Long.MAX_VALUE || remainingMs(ctx) > 0L;
     }
 
     public static long remainingMs(Context ctx) {
         try {
-            long first = Long.parseLong(SecureStore.get(ctx, FIRST, "-1"));
-            if (first < 0L) return -1L;
-            int days = Integer.parseInt(SecureStore.get(ctx, DAYS, "0"));
-            int minutes = Integer.parseInt(SecureStore.get(ctx, MINUTES, "0"));
+            long first = Long.parseLong(SecureStore.get(ctx, FIRST, String.valueOf(processFirstUsedSec)));
+            int days = Integer.parseInt(SecureStore.get(ctx, DAYS, String.valueOf(processDays)));
+            int minutes = Integer.parseInt(SecureStore.get(ctx, MINUTES, String.valueOf(processMinutes)));
+            String status = SecureStore.get(ctx, STATUS, processStatus);
+            long paused = Long.parseLong(SecureStore.get(ctx, PAUSED, String.valueOf(processPausedAtSec)));
+            if (first < 0L) first = processFirstUsedSec;
+            if (first < 0L) return 0L;
             long total = (days * 86400L + minutes * 60L) * 1000L;
             if (total <= 0L) return Long.MAX_VALUE;
-            long paused = Long.parseLong(SecureStore.get(ctx, PAUSED, "0"));
-            String status = SecureStore.get(ctx, STATUS, "active");
             long used = "paused".equals(status) && paused > 0L
                     ? (paused - first) * 1000L
                     : System.currentTimeMillis() - first * 1000L;
             return Math.max(0L, total - used);
         } catch (Exception e) {
+            if (!processKey.isEmpty() && processFirstUsedSec >= 0L) {
+                long total = (processDays * 86400L + processMinutes * 60L) * 1000L;
+                if (total <= 0L) return Long.MAX_VALUE;
+                return Math.max(0L, total - (System.currentTimeMillis() - processFirstUsedSec * 1000L));
+            }
             return 0L;
         }
     }
 
     public static void clear(Context ctx) {
+        processKey = "";
+        processUser = "";
+        processStatus = "active";
+        processFirstUsedSec = -1L;
+        processPausedAtSec = 0L;
+        processDays = 0;
+        processMinutes = 0;
+        processDeviceCount = 0;
         SecureStore.remove(ctx, KEY);
         SecureStore.remove(ctx, FIRST);
         SecureStore.remove(ctx, DAYS);
