@@ -52,7 +52,10 @@ public final class Fs {
         message = message.replaceAll("[\\r\\n]+", " ").trim();
         message = message.replaceAll("(?i)(key=)[^&\\s]+", "$1[oculto]");
         if (message.isEmpty()) message = "sem corpo de resposta";
-        if (message.length() > 280) message = message.substring(0, 280) + "…";
+        if (code == 403) {
+            message += " — publique as Firestore Rules compatíveis com slots no Firebase Console";
+        }
+        if (message.length() > 360) message = message.substring(0, 360) + "…";
         return operation + " (HTTP " + code + "): " + message;
     }
 

@@ -119,8 +119,8 @@ public final class LicenseManager {
                 putPatch(migration, migrationMask, "slot1UsedAt", com.replayx.sender.util.Fs.ts(firstSec));
                 if (first == null) putPatch(migration, migrationMask, "firstUsed", com.replayx.sender.util.Fs.ts(firstSec));
                 putPatch(migration, migrationMask, "devicesUsed", com.replayx.sender.util.Fs.num(1));
-                if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, migration, migrationMask.toString(), "")) {
-                    out.message = com.replayx.sender.util.Fs.lastPatchDiagnostic("migração");
+                if (!persistSlotRegistration(docId, migration, migrationMask.toString(), slot1, 1)) {
+                    out.message = com.replayx.sender.util.Fs.lastPatchDiagnostic("migração do dispositivo");
                     return out;
                 }
                 count = 1;
@@ -155,7 +155,7 @@ public final class LicenseManager {
                     return out;
                 }
                 putPatch(patch, mask, "devicesUsed", com.replayx.sender.util.Fs.num(count));
-                if (!com.replayx.sender.util.Fs.patchDoc("keys/" + docId, patch, mask.toString(), "")) {
+                if (!persistSlotRegistration(docId, patch, mask.toString(), myDevice, count)) {
                     out.message = com.replayx.sender.util.Fs.lastPatchDiagnostic("registro do dispositivo");
                     return out;
                 }
@@ -183,6 +183,33 @@ public final class LicenseManager {
             out.message = "Não foi possível validar a key agora";
             return out;
         }
+    }
+
+    private static boolean persistSlotRegistration(String docId, JSONObject patch, String mask,
+                                                    String expectedDevice, int expectedCount) {
+        String path = "keys/" + docId;
+        // Fs.patchDoc já tenta Commit e PATCH mantendo a máscara; não usamos
+        // uma escrita sem máscara para não correr o risco de substituir o doc.
+        boolean ok = com.replayx.sender.util.Fs.patchDoc(path, patch, mask, "");
+        if (!ok) return false;
+
+        JSONObject after = com.replayx.sender.util.Fs.getDoc(path);
+        // O Commit/PATCH já confirmou a gravação. Se a leitura de confirmação
+        // falhar temporariamente, não bloqueie um login válido recém-registrado.
+        if (after == null) return true;
+        boolean visible = (expectedDevice.equals(com.replayx.sender.util.Fs.getStr(after, "slot1DeviceId", ""))
+                    || expectedDevice.equals(com.replayx.sender.util.Fs.getStr(after, "slot2DeviceId", "")))
+                && com.replayx.sender.util.Fs.getLong(after, "devicesUsed", -1L) >= expectedCount;
+        if (!visible) {
+            ok = com.replayx.sender.util.Fs.patchDoc(path, patch, mask, "");
+            if (!ok) return false;
+            after = com.replayx.sender.util.Fs.getDoc(path);
+            if (after == null) return true;
+            visible = (expectedDevice.equals(com.replayx.sender.util.Fs.getStr(after, "slot1DeviceId", ""))
+                        || expectedDevice.equals(com.replayx.sender.util.Fs.getStr(after, "slot2DeviceId", "")))
+                    && com.replayx.sender.util.Fs.getLong(after, "devicesUsed", -1L) >= expectedCount;
+        }
+        return visible;
     }
 
     private static void putPatch(JSONObject patch, StringBuilder mask, String path, Object value) throws Exception {

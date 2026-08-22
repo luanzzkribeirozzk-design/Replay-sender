@@ -84,7 +84,7 @@ class LoginActivity : AppCompatActivity() {
                 } else {
                     LicenseManager.clear(this)
                     setupForm()
-                    setStatus(if (auto) "Faça login novamente" else result.message, 0xFFFF5555.toInt())
+                    setStatus(result.message, 0xFFFF5555.toInt())
                 }
             }
         }
